@@ -1,4 +1,4 @@
-import { DocumentType } from "@prisma/client";
+import { DocumentType } from "@/generated/prisma/client";
 
 import { createDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";

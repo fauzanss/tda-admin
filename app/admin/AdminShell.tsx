@@ -1,6 +1,6 @@
 "use client";
 
-import type { UserRole } from "@prisma/client";
+import type { UserRole } from "@/generated/prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";

@@ -1,6 +1,6 @@
 "use server";
 
-import { DocumentStatus, DocumentType, Prisma } from "@prisma/client";
+import { DocumentStatus, DocumentType, Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";

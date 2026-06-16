@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentType } from "@prisma/client";
+import { DocumentType } from "@/generated/prisma/client";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 

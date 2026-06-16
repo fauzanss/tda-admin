@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentType } from "@prisma/client";
+import { DocumentType } from "@/generated/prisma/client";
 import { useState } from "react";
 
 type FormLine = {

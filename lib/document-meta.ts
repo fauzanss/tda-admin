@@ -1,4 +1,4 @@
-import { DocumentType } from "@prisma/client";
+import { DocumentType } from "@/generated/prisma/client";
 
 export const documentTypeLabels: Record<DocumentType, string> = {
   INVOICE: "Invoice",

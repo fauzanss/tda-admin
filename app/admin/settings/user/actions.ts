@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, type UserRole } from "@prisma/client";
+import { Prisma, type UserRole } from "@/generated/prisma/client";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";

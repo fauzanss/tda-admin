@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 
