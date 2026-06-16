@@ -15,6 +15,9 @@ function createAdapter() {
     user: decodeURIComponent(parsed.username),
     password: decodeURIComponent(parsed.password),
     database: decodeURIComponent(parsed.pathname.replace(/^\//, "")),
+    connectionLimit: 2,
+    acquireTimeout: 10_000,
+    connectTimeout: 5_000,
   });
 }
 
@@ -29,7 +32,12 @@ function createPrismaClient() {
     globalForPrisma.adapter = adapter;
   }
 
-  return new PrismaClient({ adapter, log: ["error"] });
+  const logLevels =
+    process.env.NODE_ENV === "development"
+      ? (["query", "info", "warn", "error"] as const)
+      : (["error"] as const);
+
+  return new PrismaClient({ adapter, log: [...logLevels] });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

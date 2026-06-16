@@ -1,4 +1,5 @@
 import { DocumentType } from "@/generated/prisma/client";
+import { headers } from "next/headers";
 import QRCode from "qrcode";
 
 const DEFAULT_BASE = "https://admin.transdgital.id";
@@ -38,10 +39,25 @@ export function getDocumentVerifyUrl(type: DocumentType, id: string): string {
   return `${base}/qrcode/${segment}/${encodeURIComponent(id)}`;
 }
 
-export async function getDocumentQrDataUrl(verifyUrl: string): Promise<string> {
-  return QRCode.toDataURL(verifyUrl, {
+export async function getDocumentQrDataUrl(content: string): Promise<string> {
+  return QRCode.toDataURL(content, {
     width: 200,
     margin: 0,
     errorCorrectionLevel: "M",
   });
+}
+
+/** Full URL for the current request path (e.g. preview page URL in QR). */
+export async function getRequestUrlForPath(pathname: string): Promise<string> {
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+
+  if (host) {
+    const proto = headerList.get("x-forwarded-proto") ?? "http";
+    return `${proto}://${host}${normalizedPath}`;
+  }
+
+  const fallbackBase = (process.env.NEXTAUTH_URL ?? "http://localhost:3020").replace(/\/$/, "");
+  return `${fallbackBase}${normalizedPath}`;
 }

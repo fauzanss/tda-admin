@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { PrintButton } from "@/app/admin/documents/PrintButton";
-import { getDocumentQrDataUrl, getDocumentVerifyUrl } from "@/lib/document-verify-qr";
+import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
 import { documentTypeLabels } from "@/lib/document-meta";
 import { formatCurrency } from "@/lib/documents";
 import { prisma } from "@/lib/prisma";
@@ -65,7 +65,7 @@ function renderDetail(type: string, detail?: string | null) {
     return (
       <ul className="line-detail mb-0 ps-3">
         {points.map((point, idx) => (
-          <li key={`${point}-${idx}`}>{point}</li>
+          <li key={`${idx}-${String(point)}`}>{String(point)}</li>
         ))}
       </ul>
     );
@@ -176,8 +176,10 @@ export default async function PreviewDocumentPage({
   const invoicePpn = invoiceSubtotal * 0.11;
   const invoiceGrandTotal = invoiceSubtotal + invoicePpn;
   const sphPartnerName = (deliveredToName || "Netciti").trim();
-  const verifyUrl = getDocumentVerifyUrl(type, resolved.id);
-  const qrDataUrl = await getDocumentQrDataUrl(verifyUrl);
+  const previewUrl = await getRequestUrlForPath(
+    `/admin/documents/${resolved.type}/${resolved.id}/preview`,
+  );
+  const qrDataUrl = await getDocumentQrDataUrl(previewUrl);
 
   return (
     <main className="relative bg-slate-200 p-4">
@@ -203,10 +205,10 @@ export default async function PreviewDocumentPage({
               </div>
             </div>
           </div>
-          <div className="letterhead-qr" title={verifyUrl}>
+          <div className="letterhead-qr" title={previewUrl}>
             {/* eslint-disable-next-line @next/next/no-img-element -- data URL from server QRCode */}
-            <img src={qrDataUrl} alt="QR verifikasi dokumen" className="doc-qr-img" width={80} height={80} />
-            <span className="doc-qr-label">Verifikasi dokumen</span>
+            <img src={qrDataUrl} alt="QR preview dokumen" className="doc-qr-img" width={80} height={80} />
+            <span className="doc-qr-label">Preview dokumen</span>
           </div>
         </div>
 
