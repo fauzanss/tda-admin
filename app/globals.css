@@ -1,26 +1,300 @@
-@import "tailwindcss";
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Times New Roman", serif;
+}
+
+.doc-preview.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.doc-preview--invoice {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  container-name: doc-preview;
+}
+
+.doc-preview--invoice::before {
+  content: "TDA Invoice";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-32deg);
+  /* vw fallback; cqw scales to lembar (container) bila didukung */
+  font-size: clamp(40px, 10.5vw, 96px);
+  font-size: clamp(40px, 10.5cqw, 96px);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(44, 62, 80, 0.12);
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+.doc-preview--invoice > * {
+  position: relative;
+  z-index: 1;
+}
+
+.letterhead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 3px solid #2c3e50;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.letterhead-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.letterhead-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.doc-qr-img {
+  display: block;
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+}
+
+.doc-qr-label {
+  display: block;
+  margin-top: 2px;
+  font-size: 7px;
+  line-height: 1.1;
+  color: #2c3e50;
+  max-width: 88px;
+  word-wrap: break-word;
+}
+
+.letterhead-logo {
+  width: 120px;
+  max-width: 32vw;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.login-tda-logo {
+  width: min(200px, 72vw);
+  height: auto;
+  object-fit: contain;
+}
+
+.admin-navbar-logo {
+  width: 100px;
+  height: auto;
+  object-fit: contain;
+}
+
+.admin-navbar-tagline {
+  font-size: clamp(0.65rem, 1.1vw, 0.8rem);
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  max-width: 18rem;
+  hyphens: auto;
+}
+
+.company-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.company-address,
+.company-contact {
+  font-size: 12px;
+}
+
+.invoice-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+.document-info {
+  margin-bottom: 12px;
+}
+
+.info-row {
+  display: flex;
+  font-size: 12px;
+}
+
+.info-label {
+  width: 100px;
+  font-weight: 700;
+}
+
+.address-section {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.address-box {
+  flex: 1;
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 12px;
+}
+
+.address-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.item-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.item-table th,
+.item-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-size: 12px;
+  vertical-align: top;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.line-detail {
+  color: #666;
+  font-size: 11px;
+}
+
+.total-section {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.total-row {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.payment-info {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  font-size: 12px;
+}
+
+.payment-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.signature-section {
+  margin-top: 20px;
+}
+
+.signature-content {
+  display: flex;
+  justify-content: space-between;
+}
+
+.signature-image {
+  width: 120px;
+  margin: 8px 0;
+}
+
+.signature-line {
+  width: 200px;
+  border-top: 1px solid #333;
+}
+
+.print-button {
+  position: fixed;
+  top: 88px;
+  right: 20px;
+  border: none;
+  border-radius: 4px;
+  background: #2c3e50;
+  color: white;
+  padding: 10px 16px;
+}
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .admin-layout .container-fluid,
+  .admin-layout .row {
+    margin: 0 !important;
+    padding: 0 !important;
+    --bs-gutter-x: 0 !important;
+    --bs-gutter-y: 0 !important;
+  }
+
+  .admin-layout .print-content {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .doc-preview.container {
+    margin: 0;
+    box-shadow: none;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 12mm;
+  }
+
+  .doc-preview {
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  .doc-preview--invoice::before {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
