@@ -2,15 +2,21 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { NextAuthOptions } from "next-auth";
 import { UserRole } from "@/generated/prisma/client";
-import { compare } from "bcryptjs";
+import { cookies } from "next/headers";
 import { z } from "zod";
 
 import { getNextAuthTdaCookieOptions } from "@/lib/auth-cookies";
+import {
+  PENDING_2FA_COOKIE_NAME,
+  clearPending2FaCookie,
+  verifyPending2FaToken,
+} from "@/lib/pending-2fa";
 import { prisma } from "@/lib/prisma";
+import { decryptTotpSecret, verifyTotpCode } from "@/lib/totp";
 
-const credentialsSchema = z.object({
+const totpSignInSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  totpCode: z.string().regex(/^\d{6}$/),
 });
 
 export const authOptions: NextAuthOptions = {
@@ -24,44 +30,49 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: "Email & Password",
+      name: "Email & Password + TOTP",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        totpCode: { label: "Authenticator code", type: "text" },
       },
       async authorize(rawCredentials) {
-        const parsed = credentialsSchema.safeParse(rawCredentials);
+        const parsed = totpSignInSchema.safeParse(rawCredentials);
         if (!parsed.success) {
           return null;
         }
 
+        const cookieStore = await cookies();
+        const pendingRaw = cookieStore.get(PENDING_2FA_COOKIE_NAME)?.value;
+        const pending = pendingRaw ? verifyPending2FaToken(pendingRaw) : null;
+        if (!pending || pending.email !== parsed.data.email) {
+          return null;
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
+          where: { id: pending.userId },
         });
 
-        if (!user) {
+        if (!user || user.isActive === false) {
           return null;
         }
 
-        const validPassword = await compare(
-          parsed.data.password,
-          user.passwordHash,
-        );
-
-        if (!validPassword) {
+        if (!user.totpEnabled || !user.totpSecret) {
           return null;
         }
 
-        if ((user as { isActive?: boolean }).isActive === false) {
+        const secret = decryptTotpSecret(user.totpSecret);
+        if (!verifyTotpCode(secret, parsed.data.totpCode)) {
           return null;
         }
+
+        await clearPending2FaCookie();
 
         return {
           id: user.id,
           name: user.name,
           email: user.email,
-          /* Default ADMIN if column belum ter-migrate (setelah db push + generate, pakai user.role) */
-          role: (user as { role?: UserRole }).role ?? "ADMIN",
+          role: user.role ?? "ADMIN",
+          mfaVerified: true,
         };
       },
     }),
@@ -71,6 +82,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id;
         (token as { role?: UserRole }).role = (user as unknown as { role: UserRole }).role;
+        token.mfaVerified = (user as { mfaVerified?: boolean }).mfaVerified === true;
       }
       return token;
     },
@@ -79,6 +91,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub;
         (session.user as { role: UserRole }).role =
           (token as { role?: UserRole }).role ?? "ADMIN";
+        session.user.mfaVerified = token.mfaVerified === true;
       }
       return session;
     },

@@ -4,7 +4,7 @@ import { withAuth } from "next-auth/middleware";
 import { getSessionTokenCookieNameForMiddleware } from "@/lib/auth-cookies";
 import { canWriteFiles, isAdminRole } from "@/lib/role-guards";
 
-type TokenWithRole = { role?: string };
+type TokenWithRole = { role?: string; mfaVerified?: boolean };
 
 export default withAuth(
   function middleware(req) {
@@ -35,7 +35,7 @@ export default withAuth(
       signIn: "/login",
     },
     callbacks: {
-      authorized: ({ token }) => Boolean(token),
+      authorized: ({ token }) => Boolean(token) && (token as TokenWithRole).mfaVerified === true,
     },
     cookies: {
       sessionToken: {

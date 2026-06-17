@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { createUser, updateUserFields } from "@/app/admin/settings/user/actions";
+import { createUser, resetUserTotp, updateUserFields } from "@/app/admin/settings/user/actions";
 import { DeleteUserButton } from "@/app/admin/settings/user/DeleteUserButton";
 
 export type UserListRow = {
@@ -12,6 +12,7 @@ export type UserListRow = {
   email: string;
   role: string;
   isActive: boolean;
+  totpEnabled: boolean;
   createdAt: string;
 };
 
@@ -111,6 +112,26 @@ export function UserSettingsClient({
     }
   }
 
+  async function handleResetTotp(userId: string, email: string) {
+    if (
+      !globalThis.confirm(
+        `Reset 2FA untuk ${email}? User harus setup authenticator ulang saat login berikutnya.`,
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await resetUserTotp(userId);
+      setEditing(null);
+      router.refresh();
+    } catch (err) {
+      globalThis.alert(getActionErrorMessage(err) ?? "Gagal reset 2FA. Coba lagi.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <main>
       <div className="d-flex align-items-center justify-content-between mb-3">
@@ -130,6 +151,7 @@ export function UserSettingsClient({
                 <th>Email</th>
                 <th>Role</th>
                 <th>Status</th>
+                <th>2FA</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -137,7 +159,7 @@ export function UserSettingsClient({
             <tbody>
               {initialUsers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-muted">
+                  <td colSpan={7} className="text-muted">
                     No users.
                   </td>
                 </tr>
@@ -154,6 +176,13 @@ export function UserSettingsClient({
                         <span className="badge text-bg-success">Active</span>
                       ) : (
                         <span className="badge text-bg-secondary">Inactive</span>
+                      )}
+                    </td>
+                    <td>
+                      {user.totpEnabled ? (
+                        <span className="badge text-bg-primary">Enabled</span>
+                      ) : (
+                        <span className="badge text-bg-warning text-dark">Pending</span>
                       )}
                     </td>
                     <td className="text-nowrap">{formatDateTime(user.createdAt)}</td>
@@ -406,7 +435,16 @@ export function UserSettingsClient({
                   </div>
                 </div>
               </div>
-              <div className="card-footer d-flex justify-content-end gap-2">
+              <div className="card-footer d-flex justify-content-between gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => handleResetTotp(editing.id, editing.email)}
+                  disabled={loading}
+                >
+                  Reset 2FA
+                </button>
+                <div className="d-flex gap-2">
                 <button
                   type="button"
                   className="btn btn-outline-secondary btn-sm"
@@ -418,6 +456,7 @@ export function UserSettingsClient({
                 <button type="submit" className="btn btn-primary btn-sm" disabled={loading}>
                   {loading ? "…" : "Simpan"}
                 </button>
+                </div>
               </div>
             </form>
           </div>

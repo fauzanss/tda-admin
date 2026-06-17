@@ -37,6 +37,8 @@ model User {
   passwordHash String
   role         UserRole  @default(ADMIN)
   isActive     Boolean   @default(true)
+  totpSecret   String?   @db.Text
+  totpEnabled  Boolean   @default(false)
   emailVerified DateTime?
   image        String?
   accounts     Account[]

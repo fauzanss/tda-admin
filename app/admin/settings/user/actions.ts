@@ -168,6 +168,26 @@ export async function updateUserFields(formData: FormData) {
   revalidatePath("/admin/settings/user");
 }
 
+export async function resetUserTotp(userId: string) {
+  await requireAdmin();
+  if (!userId) {
+    throw new Error("Missing user");
+  }
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id === userId) {
+    throw new Error("You cannot reset your own 2FA from this page");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      totpSecret: null,
+      totpEnabled: false,
+    },
+  });
+  revalidatePath("/admin/settings/user");
+}
+
 /** Hapus user tanpa dokumen; jika punya dokumen, cukup nonaktifkan (isActive = false). */
 export async function deleteUser(userId: string) {
   await requireAdmin();

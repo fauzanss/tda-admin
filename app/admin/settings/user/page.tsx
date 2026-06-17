@@ -13,6 +13,7 @@ function mapUserForClient(u: {
   email: string;
   role: string;
   isActive: boolean | null;
+  totpEnabled: boolean | null;
   createdAt: Date;
 }): UserListRow {
   return {
@@ -21,6 +22,7 @@ function mapUserForClient(u: {
     email: u.email,
     role: u.role,
     isActive: u.isActive !== false,
+    totpEnabled: u.totpEnabled === true,
     createdAt: u.createdAt.toISOString(),
   };
 }
@@ -42,10 +44,11 @@ export default async function UserSettingsPage() {
       email: string;
       role: string;
       isActive: boolean | null;
+      totpEnabled: boolean | null;
       createdAt: Date;
     }>
   >(
-    Prisma.sql`SELECT \`id\`, \`name\`, \`email\`, \`role\`, \`isActive\`, \`createdAt\` FROM \`User\` ORDER BY \`createdAt\` DESC`,
+    Prisma.sql`SELECT \`id\`, \`name\`, \`email\`, \`role\`, \`isActive\`, \`totpEnabled\`, \`createdAt\` FROM \`User\` ORDER BY \`createdAt\` DESC`,
   );
 
   return <UserSettingsClient currentUserId={currentUserId} initialUsers={users.map(mapUserForClient)} />;
