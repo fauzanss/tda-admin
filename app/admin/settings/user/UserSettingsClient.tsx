@@ -17,6 +17,19 @@ export type UserListRow = {
 
 const ROLES = ["ADMIN", "STAFF", "OFFICER"] as const;
 
+function getPasswordMatchError(form: HTMLFormElement, requirePassword: boolean): string | null {
+  const password = String(new FormData(form).get("password") ?? "").trim();
+  const confirmPassword = String(new FormData(form).get("confirmPassword") ?? "").trim();
+  if (requirePassword) {
+    if (password !== confirmPassword) return "Konfirmasi password tidak cocok";
+    return null;
+  }
+  if (password === "" && confirmPassword === "") return null;
+  if (password === "" && confirmPassword !== "") return "Isi password terlebih dahulu";
+  if (password !== confirmPassword) return "Konfirmasi password tidak cocok";
+  return null;
+}
+
 /** Pesan error dari server action (Next.js kadang bungkus/serialize bentuk khusus). */
 function getActionErrorMessage(err: unknown): string | null {
   if (err == null) return null;
@@ -56,6 +69,11 @@ export function UserSettingsClient({
   async function handleAddSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    const passwordError = getPasswordMatchError(form, true);
+    if (passwordError) {
+      globalThis.alert(passwordError);
+      return;
+    }
     setSaving(true);
     try {
       await createUser(new FormData(form));
@@ -74,6 +92,11 @@ export function UserSettingsClient({
   async function handleEditSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    const passwordError = getPasswordMatchError(form, false);
+    if (passwordError) {
+      globalThis.alert(passwordError);
+      return;
+    }
     setSaving(true);
     try {
       await updateUserFields(new FormData(form));
@@ -225,6 +248,22 @@ export function UserSettingsClient({
                     placeholder="Min. 6 characters"
                   />
                 </div>
+                <div className="col-12">
+                  <label className="form-label" htmlFor="addConfirmPassword">
+                    Konfirmasi password
+                  </label>
+                  <input
+                    id="addConfirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    className="form-control form-control-sm"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    disabled={loading}
+                    placeholder="Ulangi password"
+                  />
+                </div>
                 <div className="col-6">
                   <label className="form-label" htmlFor="addRole">
                     Role
@@ -279,7 +318,7 @@ export function UserSettingsClient({
           aria-modal="true"
           aria-labelledby="userModalEditTitle"
         >
-          <div className="card w-100" style={{ maxWidth: 440 }}>
+          <div className="card w-100" style={{ maxWidth: 480 }}>
             <div className="card-header d-flex justify-content-between align-items-center">
               <h2 className="h5 mb-0" id="userModalEditTitle">
                 Edit user
@@ -299,6 +338,36 @@ export function UserSettingsClient({
                 <p className="mb-3 fw-medium">{editing.name ?? "—"}</p>
                 <p className="mb-1 small text-muted">Email</p>
                 <p className="mb-3 fw-medium">{editing.email}</p>
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="editPassword">
+                    Password
+                  </label>
+                  <input
+                    id="editPassword"
+                    name="password"
+                    type="password"
+                    className="form-control form-control-sm"
+                    minLength={6}
+                    autoComplete="new-password"
+                    disabled={loading}
+                    placeholder="Kosongkan jika tidak diubah (min. 6 karakter)"
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label" htmlFor="editConfirmPassword">
+                    Konfirmasi password
+                  </label>
+                  <input
+                    id="editConfirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    className="form-control form-control-sm"
+                    minLength={6}
+                    autoComplete="new-password"
+                    disabled={loading}
+                    placeholder="Ulangi password baru"
+                  />
+                </div>
                 <div className="row g-2">
                   <div className="col-6">
                     <label className="form-label" htmlFor="editRole">

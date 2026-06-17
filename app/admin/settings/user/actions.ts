@@ -13,19 +13,67 @@ import { requireAdmin } from "@/lib/roles";
 
 const userRoleValues = ["ADMIN", "STAFF", "OFFICER"] as const;
 
-const updateUserSchema = z.object({
-  userId: z.string().min(1),
-  role: z.enum(userRoleValues),
-  isActive: z.enum(["true", "false"]).transform((v) => v === "true"),
-});
+const updateUserSchema = z
+  .object({
+    userId: z.string().min(1),
+    role: z.enum(userRoleValues),
+    isActive: z.enum(["true", "false"]).transform((v) => v === "true"),
+    password: z.preprocess(
+      (v) => {
+        const trimmed = String(v ?? "").trim();
+        return trimmed === "" ? undefined : trimmed;
+      },
+      z.string().min(6).max(200).optional(),
+    ),
+    confirmPassword: z.preprocess(
+      (v) => {
+        const trimmed = String(v ?? "").trim();
+        return trimmed === "" ? undefined : trimmed;
+      },
+      z.string().min(6).max(200).optional(),
+    ),
+  })
+  .superRefine((data, ctx) => {
+    const { password, confirmPassword } = data;
+    if (!password && !confirmPassword) return;
+    if (password && !confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Konfirmasi password wajib diisi",
+        path: ["confirmPassword"],
+      });
+      return;
+    }
+    if (!password && confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Isi password terlebih dahulu",
+        path: ["password"],
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Konfirmasi password tidak cocok",
+        path: ["confirmPassword"],
+      });
+    }
+  });
 
-const createUserSchema = z.object({
-  name: z.string().max(200).optional(),
-  email: z.string().email(),
-  password: z.string().min(6).max(200),
-  role: z.enum(userRoleValues),
-  isActive: z.enum(["true", "false"]).transform((v) => v === "true"),
-});
+const createUserSchema = z
+  .object({
+    name: z.string().max(200).optional(),
+    email: z.string().email(),
+    password: z.string().min(6).max(200),
+    confirmPassword: z.string().min(6).max(200),
+    role: z.enum(userRoleValues),
+    isActive: z.enum(["true", "false"]).transform((v) => v === "true"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Konfirmasi password tidak cocok",
+    path: ["confirmPassword"],
+  });
 
 export async function createUser(formData: FormData) {
   await requireAdmin();
@@ -33,6 +81,7 @@ export async function createUser(formData: FormData) {
     name: String(formData.get("name") ?? "").trim() || undefined,
     email: String(formData.get("email") ?? "").trim(),
     password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
     role: String(formData.get("role") ?? ""),
     isActive: String(formData.get("isActive") ?? "true"),
   });
@@ -86,18 +135,35 @@ export async function createUser(formData: FormData) {
 
 export async function updateUserFields(formData: FormData) {
   await requireAdmin();
-  const parsed = updateUserSchema.parse({
+  const parseResult = updateUserSchema.safeParse({
     userId: String(formData.get("userId") ?? ""),
     role: String(formData.get("role") ?? ""),
     isActive: String(formData.get("isActive") ?? "true"),
+    password: String(formData.get("password") ?? ""),
+    confirmPassword: String(formData.get("confirmPassword") ?? ""),
   });
+  if (!parseResult.success) {
+    const first = parseResult.error.issues[0];
+    throw new Error(first?.message ?? "Invalid form data");
+  }
+  const parsed = parseResult.data;
+
+  const data: {
+    role: UserRole;
+    isActive: boolean;
+    passwordHash?: string;
+  } = {
+    role: parsed.role as UserRole,
+    isActive: parsed.isActive,
+  };
+
+  if (parsed.password) {
+    data.passwordHash = await hash(parsed.password, 10);
+  }
 
   await prisma.user.update({
     where: { id: parsed.userId },
-    data: {
-      role: parsed.role as UserRole,
-      isActive: parsed.isActive,
-    },
+    data,
   });
   revalidatePath("/admin/settings/user");
 }
