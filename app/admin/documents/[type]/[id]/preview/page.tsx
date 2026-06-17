@@ -193,8 +193,8 @@ export default async function PreviewDocumentPage({
               src="/tda-logo-transparent.png"
               alt="TDA Logo"
               className="letterhead-logo"
-              width={120}
-              height={45}
+              width={96}
+              height={36}
               priority
             />
             <div className="letterhead-text">
@@ -207,7 +207,7 @@ export default async function PreviewDocumentPage({
           </div>
           <div className="letterhead-qr" title={previewUrl}>
             {/* eslint-disable-next-line @next/next/no-img-element -- data URL from server QRCode */}
-            <img src={qrDataUrl} alt="QR preview dokumen" className="doc-qr-img" width={80} height={80} />
+            <img src={qrDataUrl} alt="QR preview dokumen" className="doc-qr-img" width={54} height={54} />
             <span className="doc-qr-label">Preview dokumen</span>
           </div>
         </div>
@@ -244,7 +244,7 @@ export default async function PreviewDocumentPage({
         )}
 
         {type === "SPH" && (
-          <div style={{ marginTop: 10, fontSize: 12 }}>
+          <div className="doc-section">
             <div className="payment-title">To</div>
             <div>Attn. {sphNameForSalutation(billToName)}</div>
             <div>{deliveredToName || "-"}</div>
@@ -252,9 +252,9 @@ export default async function PreviewDocumentPage({
         )}
 
         {type === "SPH" && (
-          <div style={{ marginTop: 12, fontSize: 12 }}>
+          <div className="doc-section">
             <p>Dear Sir/Madam,</p>
-            <p style={{ marginTop: 8 }}>
+            <p>
               We, PT Transformasi Digital Abadi as an official partner of{" "}
               {sphPartnerName}, would like to submit the following quotation:
             </p>
@@ -320,50 +320,46 @@ export default async function PreviewDocumentPage({
         </table>
 
         {type === "PURCHASE_ORDER" ? (
-          <table className="item-table" style={{ marginTop: 20, width: 400, marginLeft: "auto" }}>
+          <table className="item-table doc-totals-table">
             <tbody>
               <tr>
-                <td style={{ border: "none", padding: "8px 10px", fontWeight: "bold" }}>Subtotal</td>
-                <td style={{ border: "none", padding: "8px 10px", textAlign: "right", fontWeight: "bold" }}>
+                <td style={{ fontWeight: "bold" }}>Subtotal</td>
+                <td style={{ textAlign: "right", fontWeight: "bold" }}>
                   {formatCurrency(poSubtotal)}
                 </td>
               </tr>
               <tr>
-                <td style={{ border: "none", padding: "8px 10px", fontWeight: "bold" }}>PPN 11%</td>
-                <td style={{ border: "none", padding: "8px 10px", textAlign: "right", fontWeight: "bold" }}>
+                <td style={{ fontWeight: "bold" }}>PPN 11%</td>
+                <td style={{ textAlign: "right", fontWeight: "bold" }}>
                   {formatCurrency(poPpn)}
                 </td>
               </tr>
               <tr style={{ borderTop: "2px solid #2c3e50" }}>
-                <td style={{ border: "none", padding: "12px 10px", fontWeight: "bold", fontSize: 16 }}>
-                  Total Purchase Order
-                </td>
-                <td style={{ border: "none", padding: "12px 10px", textAlign: "right", fontWeight: "bold", fontSize: 16 }}>
+                <td style={{ fontWeight: "bold" }}>Total Purchase Order</td>
+                <td style={{ textAlign: "right", fontWeight: "bold" }}>
                   {formatCurrency(poGrandTotal)}
                 </td>
               </tr>
             </tbody>
           </table>
         ) : type === "INVOICE" ? (
-          <table className="item-table" style={{ marginTop: 20, width: 400, marginLeft: "auto" }}>
+          <table className="item-table doc-totals-table">
             <tbody>
               <tr>
-                <td style={{ border: "none", padding: "8px 10px", fontWeight: "bold" }}>Subtotal</td>
-                <td style={{ border: "none", padding: "8px 10px", textAlign: "right", fontWeight: "bold" }}>
+                <td style={{ fontWeight: "bold" }}>Subtotal</td>
+                <td style={{ textAlign: "right", fontWeight: "bold" }}>
                   {formatCurrency(invoiceSubtotal)}
                 </td>
               </tr>
               <tr>
-                <td style={{ border: "none", padding: "8px 10px", fontWeight: "bold" }}>PPN 11%</td>
-                <td style={{ border: "none", padding: "8px 10px", textAlign: "right", fontWeight: "bold" }}>
+                <td style={{ fontWeight: "bold" }}>PPN 11%</td>
+                <td style={{ textAlign: "right", fontWeight: "bold" }}>
                   {formatCurrency(invoicePpn)}
                 </td>
               </tr>
               <tr style={{ borderTop: "2px solid #2c3e50" }}>
-                <td style={{ border: "none", padding: "12px 10px", fontWeight: "bold", fontSize: 16 }}>
-                  Total Order
-                </td>
-                <td style={{ border: "none", padding: "12px 10px", textAlign: "right", fontWeight: "bold", fontSize: 16 }}>
+                <td style={{ fontWeight: "bold" }}>Total Order</td>
+                <td style={{ textAlign: "right", fontWeight: "bold" }}>
                   {formatCurrency(invoiceGrandTotal)}
                 </td>
               </tr>
@@ -390,7 +386,7 @@ export default async function PreviewDocumentPage({
         )}
 
         {offerNotes.length > 0 && type === "SPH" && (
-          <div style={{ marginTop: 12, fontSize: 12 }}>
+          <div className="doc-section">
             <div className="payment-title">Offer Notes</div>
             {offerNotes.map((note) => (
               <div key={String(note)}>- {String(note)}</div>
@@ -399,7 +395,7 @@ export default async function PreviewDocumentPage({
         )}
 
         {additionalNotes.length > 0 && type === "SPH" && (
-          <div style={{ marginTop: 12, fontSize: 12 }}>
+          <div className="doc-section">
             <div className="payment-title">Additional Information</div>
             {additionalNotes.map((note) => (
               <div key={String(note)}>- {String(note)}</div>
@@ -408,7 +404,7 @@ export default async function PreviewDocumentPage({
         )}
 
         {type === "SPH" && (
-          <div style={{ marginTop: 12, fontSize: 12 }}>
+          <div className="doc-section">
             <p>
               We appreciate your consideration and look forward to the
               opportunity to work together on this procurement. Thank you for
@@ -425,7 +421,7 @@ export default async function PreviewDocumentPage({
                 <div className="row g-4">
                   <div className="col-6">
                     <div style={{ fontWeight: 600 }}>Sender</div>
-                    <div style={{ border: "1px solid #000", height: 110, marginTop: 8, marginBottom: 10 }} />
+                    <div className="signature-box" />
                     <div>
                       <span style={{ display: "inline-block", width: 72 }}>Name</span>: Realdi Adithya Saputra
                     </div>
@@ -438,7 +434,7 @@ export default async function PreviewDocumentPage({
                   </div>
                   <div className="col-6">
                     <div style={{ fontWeight: 600 }}>Receiver</div>
-                    <div style={{ border: "1px solid #000", height: 110, marginTop: 8, marginBottom: 10 }} />
+                    <div className="signature-box" />
                     <div>
                       <span style={{ display: "inline-block", width: 72 }}>Name</span>:
                     </div>
@@ -450,7 +446,7 @@ export default async function PreviewDocumentPage({
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 14, fontSize: 12 }}>
+                <div className="doc-section">
                   <div style={{ fontWeight: 600 }}>Catatan:</div>
                   <div style={{ fontStyle: "italic" }}>• Surat jalan ini harus disertakan saat pengiriman barang</div>
                   <div style={{ fontStyle: "italic" }}>• Penerima wajib memeriksa barang sebelum menandatangani</div>
@@ -459,14 +455,14 @@ export default async function PreviewDocumentPage({
               </div>
               ) : (
                 <div style={{ width: "100%" }}>
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Signature</div>
-                  <div style={{ border: "1px solid #000", height: 120 }} />
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Signature</div>
+                  <div className="signature-box signature-box-lg" />
                 </div>
               )
             ) : (
               <div className="signature-left">
                 <div>Yours sincerely,</div>
-                <div style={{ marginTop: 16, fontWeight: 600 }}>
+                <div className="signature-name" style={{ fontWeight: 600 }}>
                   {company?.companyName ?? "PT. TRANSFORMASI DIGITAL ABADI"}
                 </div>
                 {withSignature ? (
@@ -475,15 +471,15 @@ export default async function PreviewDocumentPage({
                       src="/tanda-tangan.png"
                       alt="Tanda tangan"
                       className="signature-image"
-                      width={120}
-                      height={50}
+                      width={100}
+                      height={42}
                     />
                     <div className="signature-line" />
-                    <div style={{ marginTop: 6 }}>{signerName}</div>
+                    <div className="signature-name">{signerName}</div>
                     <div>Head of Sales &amp; Marketing</div>
                   </>
                 ) : (
-                  <div style={{ marginTop: 8, border: "1px solid #000", width: 220, height: 90 }} />
+                  <div className="signature-box" style={{ width: 220 }} />
                 )}
               </div>
             )}

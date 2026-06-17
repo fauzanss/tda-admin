@@ -13,8 +13,32 @@ body {
   max-width: 800px;
   margin: 0 auto;
   background: white;
-  padding: 20px;
+  padding: 12px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  line-height: 1.2;
+  font-size: 12px;
+}
+
+.doc-preview p {
+  margin: 0 0 4px;
+}
+
+.doc-preview ul {
+  margin: 0;
+}
+
+.doc-preview li {
+  line-height: 1.15;
+}
+
+.doc-section {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.doc-section + .doc-section {
+  margin-top: 6px;
 }
 
 .doc-preview--invoice {
@@ -53,16 +77,16 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 3px solid #2c3e50;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .letterhead-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
@@ -77,8 +101,8 @@ body {
 
 .doc-qr-img {
   display: block;
-  width: 80px;
-  height: 80px;
+  width: 54px;
+  height: 54px;
   image-rendering: pixelated;
 }
 
@@ -93,7 +117,7 @@ body {
 }
 
 .letterhead-logo {
-  width: 120px;
+  width: 96px;
   max-width: 32vw;
   height: auto;
   object-fit: contain;
@@ -121,30 +145,35 @@ body {
 }
 
 .company-name {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #2c3e50;
+  line-height: 1.15;
 }
 
 .company-address,
 .company-contact {
   font-size: 12px;
+  line-height: 1.15;
 }
 
 .invoice-title {
   text-align: center;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
-  margin: 10px 0;
+  margin: 6px 0;
+  line-height: 1.1;
 }
 
 .document-info {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .info-row {
   display: flex;
   font-size: 12px;
+  line-height: 1.2;
+  margin-bottom: 1px;
 }
 
 .info-label {
@@ -154,34 +183,52 @@ body {
 
 .address-section {
   display: flex;
-  gap: 12px;
-  margin: 12px 0;
+  gap: 8px;
+  margin: 6px 0;
 }
 
 .address-box {
   flex: 1;
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 5px;
   font-size: 12px;
+  line-height: 1.15;
 }
 
 .address-title {
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .item-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .item-table th,
 .item-table td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 4px 5px;
   font-size: 12px;
   vertical-align: top;
+  line-height: 1.15;
+}
+
+.item-table.doc-totals-table {
+  margin-top: 8px;
+  width: 360px;
+  margin-left: auto;
+}
+
+.item-table.doc-totals-table td {
+  border: none;
+  padding: 3px 6px;
+}
+
+.item-table.doc-totals-table tr:last-child td {
+  padding-top: 6px;
+  font-size: 13px;
 }
 
 .text-center {
@@ -194,33 +241,36 @@ body {
 
 .line-detail {
   color: #666;
-  font-size: 11px;
+  font-size: 10px;
+  line-height: 1.15;
 }
 
 .total-section {
-  margin-top: 16px;
+  margin-top: 8px;
   text-align: right;
 }
 
 .total-row {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .payment-info {
-  margin-top: 12px;
-  padding: 10px;
+  margin-top: 6px;
+  padding: 6px 8px;
   border: 1px solid #ddd;
   font-size: 12px;
+  line-height: 1.2;
 }
 
 .payment-title {
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .signature-section {
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .signature-content {
@@ -229,13 +279,37 @@ body {
 }
 
 .signature-image {
-  width: 120px;
-  margin: 8px 0;
+  width: 100px;
+  margin: 4px 0;
 }
 
 .signature-line {
-  width: 200px;
+  width: 180px;
   border-top: 1px solid #333;
+}
+
+.doc-preview .signature-left > div {
+  line-height: 1.2;
+}
+
+.doc-preview .signature-name {
+  margin-top: 4px;
+}
+
+.doc-preview .signature-box {
+  border: 1px solid #000;
+  height: 70px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.doc-preview .signature-box-lg {
+  height: 80px;
+}
+
+.doc-preview .row.g-4 {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.75rem;
 }
 
 .print-button {
@@ -281,7 +355,37 @@ body {
     box-shadow: none;
     max-width: 100% !important;
     width: 100% !important;
-    padding: 12mm;
+    padding: 8mm 10mm;
+    font-size: 10.5px;
+    line-height: 1.15;
+  }
+
+  .doc-preview .letterhead-logo {
+    width: 84px;
+  }
+
+  .doc-preview .doc-qr-img {
+    width: 54px;
+    height: 54px;
+  }
+
+  .doc-preview .invoice-title {
+    font-size: 18px;
+    margin: 4px 0;
+  }
+
+  .doc-preview .signature-section {
+    margin-top: 6px;
+  }
+
+  .doc-preview .signature-image {
+    width: 90px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .doc-preview .signature-box {
+    height: 60px;
   }
 
   .doc-preview {
