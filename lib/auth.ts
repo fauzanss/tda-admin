@@ -21,6 +21,7 @@ const totpSignInSchema = z.object({
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   cookies: getNextAuthTdaCookieOptions(),
   session: {
     strategy: "jwt",

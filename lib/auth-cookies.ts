@@ -4,7 +4,8 @@ import type { NextAuthOptions } from "next-auth";
 const TDA = "tda-";
 
 /**
- * Sama logika bawaan NextAuth (`defaultCookies`): __Secure- / __Host- hanya bila koneksi dianggap secure.
+ * Pakai `__Secure-` (bukan `__Host-`) untuk semua cookie auth di production HTTPS.
+ * `__Host-` bermasalah di beberapa reverse proxy / shared hosting (mis. Hostinger).
  * Pakai `NEXTAUTH_URL` (https) untuk production.
  */
 function nextAuthUsesSecureCookiePrefix(): boolean {
@@ -14,7 +15,6 @@ function nextAuthUsesSecureCookiePrefix(): boolean {
 export function getNextAuthTdaCookieOptions(): NextAuthOptions["cookies"] {
   const secure = nextAuthUsesSecureCookiePrefix();
   const p = secure ? "__Secure-" : "";
-  const host = secure ? "__Host-" : "";
   return {
     sessionToken: {
       name: `${p}${TDA}next-auth.session-token`,
@@ -25,7 +25,7 @@ export function getNextAuthTdaCookieOptions(): NextAuthOptions["cookies"] {
       options: { httpOnly: true, sameSite: "lax", path: "/", secure },
     },
     csrfToken: {
-      name: `${host}${TDA}next-auth.csrf-token`,
+      name: `${p}${TDA}next-auth.csrf-token`,
       options: { httpOnly: true, sameSite: "lax", path: "/", secure },
     },
     pkceCodeVerifier: {
