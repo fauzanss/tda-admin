@@ -1,6 +1,6 @@
 "use server";
 
-import { DocumentStatus, DocumentType, Prisma } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentStatus, DocumentType, Prisma } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -25,6 +25,7 @@ const lineSchema = z.object({
 
 const formSchema = z.object({
   type: z.nativeEnum(DocumentType),
+  locale: z.enum(["EN", "ID"]),
   withSignature: z.enum(["true", "false"]),
   issueDate: z.string().min(1),
   dueDate: z.string().optional(),
@@ -67,6 +68,7 @@ function normalizeLines(raw: string): z.infer<typeof lineSchema>[] {
 function buildDocumentInput(formData: FormData) {
   const payload = formSchema.parse({
     type: formData.get("type"),
+    locale: String(formData.get("locale") ?? "ID"),
     withSignature: String(formData.get("withSignature") ?? "true"),
     issueDate: String(formData.get("issueDate") ?? ""),
     dueDate: String(formData.get("dueDate") ?? ""),
@@ -109,6 +111,7 @@ function buildDocumentInput(formData: FormData) {
 
   return {
     type: payload.type,
+    locale: payload.locale as DocumentLocale,
     withSignature: payload.withSignature === "true",
     issueDate,
     dueDate,
@@ -149,6 +152,7 @@ async function createByType(input: DocumentInput, userId: string) {
     return prisma.invoice.create({
       data: {
         status: DocumentStatus.DRAFT,
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         dueDate: input.dueDate,
@@ -174,6 +178,7 @@ async function createByType(input: DocumentInput, userId: string) {
     return prisma.purchaseOrder.create({
       data: {
         status: DocumentStatus.DRAFT,
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         taxId: input.taxId,
@@ -195,6 +200,7 @@ async function createByType(input: DocumentInput, userId: string) {
     return prisma.suratJalan.create({
       data: {
         status: DocumentStatus.DRAFT,
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         referencePoNumber: input.referencePoNumber,
@@ -214,6 +220,7 @@ async function createByType(input: DocumentInput, userId: string) {
   return prisma.sph.create({
     data: {
       status: DocumentStatus.DRAFT,
+      locale: input.locale,
       documentNumber: input.documentNumber,
       issueDate: input.issueDate,
       subject: input.subject,
@@ -258,6 +265,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
     await prisma.invoice.update({
       where: { id: documentId },
       data: {
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         dueDate: input.dueDate,
@@ -283,6 +291,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
     await prisma.purchaseOrder.update({
       where: { id: documentId },
       data: {
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         taxId: input.taxId,
@@ -304,6 +313,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
     await prisma.suratJalan.update({
       where: { id: documentId },
       data: {
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         referencePoNumber: input.referencePoNumber,
@@ -324,6 +334,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
     await prisma.sph.update({
       where: { id: documentId },
       data: {
+        locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         subject: input.subject,
@@ -414,6 +425,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
     const created = await prisma.invoice.create({
       data: {
         status: DocumentStatus.DRAFT,
+        locale: source.locale,
         documentNumber: null,
         duplicatedFromNumber: source.documentNumber ?? "(Draft)",
         issueDate: source.issueDate,
@@ -456,6 +468,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
     const created = await prisma.purchaseOrder.create({
       data: {
         status: DocumentStatus.DRAFT,
+        locale: source.locale,
         documentNumber: null,
         duplicatedFromNumber: source.documentNumber ?? "(Draft)",
         issueDate: source.issueDate,
@@ -494,6 +507,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
     const created = await prisma.suratJalan.create({
       data: {
         status: DocumentStatus.DRAFT,
+        locale: source.locale,
         documentNumber: null,
         duplicatedFromNumber: source.documentNumber ?? "(Draft)",
         issueDate: source.issueDate,
@@ -530,6 +544,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
   const created = await prisma.sph.create({
     data: {
       status: DocumentStatus.DRAFT,
+      locale: source.locale,
       documentNumber: null,
       duplicatedFromNumber: source.documentNumber ?? "(Draft)",
       issueDate: source.issueDate,

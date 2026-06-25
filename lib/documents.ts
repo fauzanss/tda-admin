@@ -1,4 +1,4 @@
-import { DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -47,11 +47,23 @@ export async function generateDocumentNumber(type: DocumentType, date: Date) {
   return `${prefix}/${sequence}/${year}`;
 }
 
-export function formatCurrency(amount: number) {
-  return `IDR ${new Intl.NumberFormat("id-ID", {
+function getNumberLocale(locale?: DocumentLocale | null) {
+  return locale === "EN" ? "en-US" : "id-ID";
+}
+
+export function formatCurrency(amount: number, locale?: DocumentLocale | null) {
+  return `IDR ${new Intl.NumberFormat(getNumberLocale(locale), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)}`;
+}
+
+export function formatLongDate(date: Date, locale?: DocumentLocale | null) {
+  return date.toLocaleDateString(getNumberLocale(locale), {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function parseNotes(notes: string) {

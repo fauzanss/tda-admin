@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { useState } from "react";
 
 type FormLine = {
@@ -52,6 +52,7 @@ function normalizeText(value?: string | null) {
 }
 
 type DocumentWithLines = {
+  locale?: DocumentLocale | null;
   duplicatedFromNumber?: string | null;
   withSignature?: boolean | null;
   issueDate: Date;
@@ -275,6 +276,17 @@ export function DocumentForm({
       )}
 
       <div className="row g-3 mb-3">
+        <div className="col-12 col-md-6">
+          <label className="form-label">Document Language</label>
+          <select
+            name="locale"
+            className="form-select"
+            defaultValue={defaultValue?.locale ?? "ID"}
+          >
+            <option value="EN">English</option>
+            <option value="ID">Indonesian</option>
+          </select>
+        </div>
         <div className="col-12 col-md-6">
           <label className="form-label">Create with Signature</label>
           <select

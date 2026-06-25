@@ -105,6 +105,7 @@ export default async function EditDocumentPage({
   }
 
   const defaultValue = {
+    locale: document.locale,
     duplicatedFromNumber:
       "duplicatedFromNumber" in document ? document.duplicatedFromNumber ?? null : null,
     withSignature: "withSignature" in document ? document.withSignature : true,

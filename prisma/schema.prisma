@@ -24,6 +24,11 @@ enum DocumentStatus {
   FINAL
 }
 
+enum DocumentLocale {
+  EN
+  ID
+}
+
 enum UserRole {
   ADMIN
   STAFF
@@ -126,6 +131,7 @@ model Company {
 model Invoice {
   id                    String         @id @default(cuid())
   status                DocumentStatus @default(DRAFT)
+  locale                DocumentLocale @default(ID)
   documentNumber        String?        @unique
   duplicatedFromNumber  String?
   issueDate             DateTime
@@ -168,6 +174,7 @@ model InvoiceItem {
 model PurchaseOrder {
   id                 String         @id @default(cuid())
   status             DocumentStatus @default(DRAFT)
+  locale             DocumentLocale @default(ID)
   documentNumber     String?        @unique
   duplicatedFromNumber String?
   issueDate          DateTime
@@ -206,6 +213,7 @@ model PurchaseOrderItem {
 model SuratJalan {
   id             String         @id @default(cuid())
   status         DocumentStatus @default(DRAFT)
+  locale         DocumentLocale @default(ID)
   documentNumber String?        @unique
   duplicatedFromNumber String?
   issueDate      DateTime
@@ -243,6 +251,7 @@ model SuratJalanItem {
 model Sph {
   id             String         @id @default(cuid())
   status         DocumentStatus @default(DRAFT)
+  locale         DocumentLocale @default(ID)
   documentNumber String?        @unique
   duplicatedFromNumber String?
   issueDate      DateTime

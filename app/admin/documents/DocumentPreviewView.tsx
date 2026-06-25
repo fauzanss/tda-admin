@@ -1,11 +1,11 @@
 import Image from "next/image";
 
 import { PrintButton } from "@/app/admin/documents/PrintButton";
-import { DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
+import { getDocumentStrings } from "@/lib/document-i18n";
 import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
-import { documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
-import { formatCurrency } from "@/lib/documents";
+import { formatCurrency, formatLongDate } from "@/lib/documents";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
@@ -16,15 +16,7 @@ function formatDateDDMMYYYY(date: Date) {
   return `${day}/${month}/${year}`;
 }
 
-function formatLongDateID(date: Date) {
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-/** Strip "Yth." / "Yang Terhormat" from stored name so "Attn. …" is not duplicated. */
+/** Strip "Yth." / "Yang Terhormat" from stored name so salutation prefix is not duplicated. */
 function sphNameForSalutation(name: string | null | undefined): string {
   if (!name?.trim()) {
     return "-";
@@ -75,6 +67,19 @@ function renderDetail(type: string, detail?: string | null) {
   return <div className="line-detail">{detail}</div>;
 }
 
+function documentNumberLabel(type: DocumentType, t: ReturnType<typeof getDocumentStrings>) {
+  if (type === "INVOICE") {
+    return t.invoiceNo;
+  }
+  if (type === "PURCHASE_ORDER") {
+    return t.poNo;
+  }
+  if (type === "SURAT_JALAN") {
+    return t.deliveryNoteNo;
+  }
+  return t.number;
+}
+
 export async function DocumentPreviewView({
   type,
   id,
@@ -104,6 +109,8 @@ export async function DocumentPreviewView({
               include: { items: { orderBy: { sortOrder: "asc" } } },
             });
 
+  const locale = (document.locale ?? "ID") as DocumentLocale;
+  const t = getDocumentStrings(locale, type);
   const lines = document.items;
   const total = lines.reduce(
     (sum, line) => sum + Number(line.quantity) * Number(line.unitPrice),
@@ -185,6 +192,7 @@ export async function DocumentPreviewView({
       <PrintButton />
       <article
         className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}`}
+        data-doc-locale={locale}
       >
         <div className="letterhead">
           <div className="letterhead-content">
@@ -206,37 +214,37 @@ export async function DocumentPreviewView({
           </div>
           <div className="letterhead-qr" title={previewUrl}>
             {/* eslint-disable-next-line @next/next/no-img-element -- data URL from server QRCode */}
-            <img src={qrDataUrl} alt="QR preview dokumen" className="doc-qr-img" width={54} height={54} />
-            <span className="doc-qr-label">Preview dokumen</span>
+            <img src={qrDataUrl} alt={t.qrAlt} className="doc-qr-img" width={54} height={54} />
+            <span className="doc-qr-label">{t.qrLabel}</span>
           </div>
         </div>
 
-        <div className="invoice-title">{documentTypeLabels[type].toUpperCase()}</div>
+        <div className="invoice-title">{t.documentTitle}</div>
 
         <div className="document-info">
-          <div className="info-row"><span className="info-label">Date</span><span className="info-value">: {formatDateDDMMYYYY(document.issueDate)}</span></div>
-          <div className="info-row"><span className="info-label">{type === "INVOICE" ? "Invoice No." : type === "PURCHASE_ORDER" ? "PO No." : type === "SURAT_JALAN" ? "Delivery Note No." : "Number"}</span><span className="info-value">: {document.documentNumber ?? "(Draft)"}</span></div>
+          <div className="info-row"><span className="info-label">{t.date}</span><span className="info-value">: {formatDateDDMMYYYY(document.issueDate)}</span></div>
+          <div className="info-row"><span className="info-label">{documentNumberLabel(type, t)}</span><span className="info-value">: {document.documentNumber ?? t.draft}</span></div>
           {(referencePoNumber || type === "SURAT_JALAN") && (
             <div className="info-row">
-              <span className="info-label">PO No.</span>
+              <span className="info-label">{t.poNo}</span>
               <span className="info-value">: {referencePoNumber ?? "-"}</span>
             </div>
           )}
-          {referenceBastSjNumber && <div className="info-row"><span className="info-label">BAST / SJ No.</span><span className="info-value">: {referenceBastSjNumber}</span></div>}
-          {poTaxId && (type === "INVOICE" || type === "PURCHASE_ORDER") && <div className="info-row"><span className="info-label">Tax ID</span><span className="info-value">: {poTaxId}</span></div>}
-          {subject && <div className="info-row"><span className="info-label">Subject</span><span className="info-value">: {subject}</span></div>}
+          {referenceBastSjNumber && <div className="info-row"><span className="info-label">{t.bastSjNo}</span><span className="info-value">: {referenceBastSjNumber}</span></div>}
+          {poTaxId && (type === "INVOICE" || type === "PURCHASE_ORDER") && <div className="info-row"><span className="info-label">{t.taxId}</span><span className="info-value">: {poTaxId}</span></div>}
+          {subject && <div className="info-row"><span className="info-label">{t.subject}</span><span className="info-value">: {subject}</span></div>}
         </div>
 
         {(type === "INVOICE" || type === "PURCHASE_ORDER" || type === "SURAT_JALAN") && (
           <div className="address-section">
             <div className="address-box">
               <div className="address-title">
-                {type === "INVOICE" ? "Bill To" : type === "PURCHASE_ORDER" ? "Order To" : "Sent From"}
+                {type === "INVOICE" ? t.billTo : type === "PURCHASE_ORDER" ? t.orderTo : t.sentFrom}
               </div>
               {renderAddress(type === "SURAT_JALAN" ? fromName : billToName, type === "SURAT_JALAN" ? fromAddress : billToAddress)}
             </div>
             <div className="address-box">
-              <div className="address-title">{type === "SURAT_JALAN" ? "Sent To" : "Delivered To"}</div>
+              <div className="address-title">{type === "SURAT_JALAN" ? t.sentTo : t.deliveredTo}</div>
               {renderAddress(deliveredToName, deliveredToAddress)}
             </div>
           </div>
@@ -244,19 +252,16 @@ export async function DocumentPreviewView({
 
         {type === "SPH" && (
           <div className="doc-section">
-            <div className="payment-title">To</div>
-            <div>Attn. {sphNameForSalutation(billToName)}</div>
+            <div className="payment-title">{t.to}</div>
+            <div>{t.attnPrefix} {sphNameForSalutation(billToName)}</div>
             <div>{deliveredToName || "-"}</div>
           </div>
         )}
 
         {type === "SPH" && (
           <div className="doc-section">
-            <p>Dear Sir/Madam,</p>
-            <p>
-              We, PT Transformasi Digital Abadi as an official partner of{" "}
-              {sphPartnerName}, would like to submit the following quotation:
-            </p>
+            <p>{t.sphIntroGreeting}</p>
+            <p>{t.sphIntroBody(sphPartnerName)}</p>
           </div>
         )}
 
@@ -264,19 +269,19 @@ export async function DocumentPreviewView({
           <thead>
             {type === "SURAT_JALAN" ? (
               <tr>
-                <th>No.</th>
-                <th>Deskripsi Barang</th>
-                <th className="text-center">Quantity</th>
-                <th className="text-center">Unit</th>
-                <th className="text-center">Kondisi</th>
+                <th>{t.itemNo}</th>
+                <th>{t.itemDescription}</th>
+                <th className="text-center">{t.quantity}</th>
+                <th className="text-center">{t.unit}</th>
+                <th className="text-center">{t.condition}</th>
               </tr>
             ) : (
               <tr>
-                <th>{type === "SPH" ? "Item Name" : "Item Description"}</th>
-                <th className="text-center">Quantity</th>
-                <th className="text-center">Unit</th>
-                <th className="text-right">{type === "SPH" ? "Harga Satuan (Rp)" : "Price"}</th>
-                <th className="text-right">Total</th>
+                <th>{type === "SPH" ? t.itemName : t.itemDescription}</th>
+                <th className="text-center">{t.quantity}</th>
+                <th className="text-center">{t.unit}</th>
+                <th className="text-right">{type === "SPH" ? t.unitPrice : t.price}</th>
+                <th className="text-right">{t.total}</th>
               </tr>
             )}
           </thead>
@@ -293,7 +298,7 @@ export async function DocumentPreviewView({
                     </td>
                     <td className="text-center">{Number(line.quantity)}</td>
                     <td className="text-center">{line.unit}</td>
-                    <td className="text-center">{line.detail ? "Baik" : "-"}</td>
+                    <td className="text-center">{line.detail ? t.conditionGood : "-"}</td>
                   </tr>
                 );
               }
@@ -307,10 +312,10 @@ export async function DocumentPreviewView({
                   <td className="text-center">{Number(line.quantity)}</td>
                   <td className="text-center">{line.unit}</td>
                   <td className="text-right">
-                    {formatCurrency(Number(line.unitPrice))}
+                    {formatCurrency(Number(line.unitPrice), locale)}
                   </td>
                   <td className="text-right">
-                    {formatCurrency(lineTotal)}
+                    {formatCurrency(lineTotal, locale)}
                   </td>
                 </tr>
               );
@@ -322,21 +327,21 @@ export async function DocumentPreviewView({
           <table className="item-table doc-totals-table">
             <tbody>
               <tr>
-                <td style={{ fontWeight: "bold" }}>Subtotal</td>
+                <td style={{ fontWeight: "bold" }}>{t.subtotal}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
-                  {formatCurrency(poSubtotal)}
+                  {formatCurrency(poSubtotal, locale)}
                 </td>
               </tr>
               <tr>
-                <td style={{ fontWeight: "bold" }}>PPN 11%</td>
+                <td style={{ fontWeight: "bold" }}>{t.ppn}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
-                  {formatCurrency(poPpn)}
+                  {formatCurrency(poPpn, locale)}
                 </td>
               </tr>
               <tr style={{ borderTop: "2px solid #2c3e50" }}>
-                <td style={{ fontWeight: "bold" }}>Total Purchase Order</td>
+                <td style={{ fontWeight: "bold" }}>{t.totalPurchaseOrder}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
-                  {formatCurrency(poGrandTotal)}
+                  {formatCurrency(poGrandTotal, locale)}
                 </td>
               </tr>
             </tbody>
@@ -345,48 +350,48 @@ export async function DocumentPreviewView({
           <table className="item-table doc-totals-table">
             <tbody>
               <tr>
-                <td style={{ fontWeight: "bold" }}>Subtotal</td>
+                <td style={{ fontWeight: "bold" }}>{t.subtotal}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
-                  {formatCurrency(invoiceSubtotal)}
+                  {formatCurrency(invoiceSubtotal, locale)}
                 </td>
               </tr>
               <tr>
-                <td style={{ fontWeight: "bold" }}>PPN 11%</td>
+                <td style={{ fontWeight: "bold" }}>{t.ppn}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
-                  {formatCurrency(invoicePpn)}
+                  {formatCurrency(invoicePpn, locale)}
                 </td>
               </tr>
               <tr style={{ borderTop: "2px solid #2c3e50" }}>
-                <td style={{ fontWeight: "bold" }}>Total Order</td>
+                <td style={{ fontWeight: "bold" }}>{t.totalOrder}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
-                  {formatCurrency(invoiceGrandTotal)}
+                  {formatCurrency(invoiceGrandTotal, locale)}
                 </td>
               </tr>
             </tbody>
           </table>
         ) : type !== "SURAT_JALAN" && (
           <div className="total-section">
-            <div className="total-row">Grand Total: {formatCurrency(total)}</div>
+            <div className="total-row">{t.grandTotal}: {formatCurrency(total, locale)}</div>
           </div>
         )}
 
         {paymentTerms && type !== "SURAT_JALAN" && (
           <div className="payment-info">
-            <div className="payment-title">{type === "INVOICE" ? "Payment Transfer to Account - IDR" : "Payment Terms"}</div>
+            <div className="payment-title">{type === "INVOICE" ? t.paymentTransfer : t.paymentTerms}</div>
             <div style={{ whiteSpace: "pre-line" }}>{paymentTerms}</div>
           </div>
         )}
 
         {deliveryNotes && type === "SURAT_JALAN" && (
           <div className="payment-info">
-            <div className="payment-title">{type === "SURAT_JALAN" ? "Delivery Instructions" : "Delivery Notes"}</div>
+            <div className="payment-title">{t.deliveryInstructions}</div>
             <div style={{ whiteSpace: "pre-line" }}>{deliveryNotes}</div>
           </div>
         )}
 
         {offerNotes.length > 0 && type === "SPH" && (
           <div className="doc-section">
-            <div className="payment-title">Offer Notes</div>
+            <div className="payment-title">{t.offerNotes}</div>
             {offerNotes.map((note) => (
               <div key={String(note)}>- {String(note)}</div>
             ))}
@@ -395,7 +400,7 @@ export async function DocumentPreviewView({
 
         {additionalNotes.length > 0 && type === "SPH" && (
           <div className="doc-section">
-            <div className="payment-title">Additional Information</div>
+            <div className="payment-title">{t.additionalInformation}</div>
             {additionalNotes.map((note) => (
               <div key={String(note)}>- {String(note)}</div>
             ))}
@@ -404,11 +409,7 @@ export async function DocumentPreviewView({
 
         {type === "SPH" && (
           <div className="doc-section">
-            <p>
-              We appreciate your consideration and look forward to the
-              opportunity to work together on this procurement. Thank you for
-              your attention and cooperation.
-            </p>
+            <p>{t.sphClosing}</p>
           </div>
         )}
 
@@ -419,48 +420,48 @@ export async function DocumentPreviewView({
               <div style={{ width: "100%" }}>
                 <div className="row g-4">
                   <div className="col-6">
-                    <div style={{ fontWeight: 600 }}>Sender</div>
+                    <div style={{ fontWeight: 600 }}>{t.sender}</div>
                     <div className="signature-box" />
                     <div>
-                      <span style={{ display: "inline-block", width: 72 }}>Name</span>: Realdi Adithya Saputra
+                      <span style={{ display: "inline-block", width: 72 }}>{t.name}</span>: Realdi Adithya Saputra
                     </div>
                     <div>
-                      <span style={{ display: "inline-block", width: 72 }}>Position</span>: Sales &amp; Marketing
+                      <span style={{ display: "inline-block", width: 72 }}>{t.position}</span>: Sales &amp; Marketing
                     </div>
                     <div>
-                      <span style={{ display: "inline-block", width: 72 }}>Date</span>: {formatLongDateID(document.issueDate)}
+                      <span style={{ display: "inline-block", width: 72 }}>{t.date}</span>: {formatLongDate(document.issueDate, locale)}
                     </div>
                   </div>
                   <div className="col-6">
-                    <div style={{ fontWeight: 600 }}>Receiver</div>
+                    <div style={{ fontWeight: 600 }}>{t.receiver}</div>
                     <div className="signature-box" />
                     <div>
-                      <span style={{ display: "inline-block", width: 72 }}>Name</span>:
+                      <span style={{ display: "inline-block", width: 72 }}>{t.name}</span>:
                     </div>
                     <div>
-                      <span style={{ display: "inline-block", width: 72 }}>Position</span>:
+                      <span style={{ display: "inline-block", width: 72 }}>{t.position}</span>:
                     </div>
                     <div>
-                      <span style={{ display: "inline-block", width: 72 }}>Date</span>:
+                      <span style={{ display: "inline-block", width: 72 }}>{t.date}</span>:
                     </div>
                   </div>
                 </div>
                 <div className="doc-section">
-                  <div style={{ fontWeight: 600 }}>Catatan:</div>
-                  <div style={{ fontStyle: "italic" }}>• Surat jalan ini harus disertakan saat pengiriman barang</div>
-                  <div style={{ fontStyle: "italic" }}>• Penerima wajib memeriksa barang sebelum menandatangani</div>
-                  <div style={{ fontStyle: "italic" }}>• Jika ada ketidaksesuaian, segera hubungi PT. TRANSFORMASI DIGITAL ABADI</div>
+                  <div style={{ fontWeight: 600 }}>{t.notesTitle}</div>
+                  <div style={{ fontStyle: "italic" }}>• {t.noteDeliveryInclude}</div>
+                  <div style={{ fontStyle: "italic" }}>• {t.noteInspectBeforeSign}</div>
+                  <div style={{ fontStyle: "italic" }}>• {t.noteContactCompany}</div>
                 </div>
               </div>
               ) : (
                 <div style={{ width: "100%" }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Signature</div>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{t.signature}</div>
                   <div className="signature-box signature-box-lg" />
                 </div>
               )
             ) : (
               <div className="signature-left">
-                <div>Yours sincerely,</div>
+                <div>{t.yoursSincerely}</div>
                 <div className="signature-name" style={{ fontWeight: 600 }}>
                   {company?.companyName ?? "PT. TRANSFORMASI DIGITAL ABADI"}
                 </div>
@@ -468,14 +469,14 @@ export async function DocumentPreviewView({
                   <>
                     <Image
                       src="/tanda-tangan.png"
-                      alt="Tanda tangan"
+                      alt={t.signatureAlt}
                       className="signature-image"
                       width={100}
                       height={42}
                     />
                     <div className="signature-line" />
                     <div className="signature-name">{signerName}</div>
-                    <div>Head of Sales &amp; Marketing</div>
+                    <div>{t.headOfSales}</div>
                   </>
                 ) : (
                   <div className="signature-box" style={{ width: 220 }} />

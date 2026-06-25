@@ -15,8 +15,8 @@ const fileLinks = [
 ];
 
 const poLinks = [
-  { href: "/admin/po-masuk", label: "PO Masuk" },
-  { href: "/admin/po-keluar", label: "PO Keluar" },
+  { href: "/admin/po-masuk", label: "Incoming PO" },
+  { href: "/admin/po-keluar", label: "Outgoing PO" },
 ];
 
 const settingsLinks = [

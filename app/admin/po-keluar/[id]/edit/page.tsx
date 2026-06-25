@@ -51,6 +51,7 @@ export default async function EditPoKeluarPage({
   }
 
   const defaultValue = {
+    locale: document.locale,
     duplicatedFromNumber: document.duplicatedFromNumber ?? null,
     withSignature: document.withSignature,
     issueDate: document.issueDate,
