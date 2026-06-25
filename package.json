@@ -25,6 +25,7 @@
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "dotenv": "^16.6.1",
+    "googleapis": "^173.0.0",
     "mariadb": "^3.4.5",
     "next": "16.2.9",
     "next-auth": "^4.24.14",

@@ -41,3 +41,20 @@ npx prisma generate
 npx prisma db push
 npm run prisma:seed
 npm run dev
+
+## Google Drive (PO Masuk uploads)
+
+Set these environment variables in `.env.local`:
+
+```
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_DRIVE_PO_MASUK_FOLDER_ID=your-drive-folder-id
+```
+
+Setup steps:
+
+1. Create a Service Account in Google Cloud Console and enable the Google Drive API.
+2. Create a dedicated Drive folder for PO Masuk files.
+3. Share that folder with the service account email (Editor access).
+4. Copy the folder ID from the Drive URL into `GOOGLE_DRIVE_PO_MASUK_FOLDER_ID`.

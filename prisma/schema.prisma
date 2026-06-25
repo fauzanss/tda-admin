@@ -47,6 +47,7 @@ model User {
   purchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
   suratJalans  SuratJalan[] @relation("SuratJalanCreatedBy")
   sphs         Sph[] @relation("SphCreatedBy")
+  poMasuks     PoMasuk[] @relation("PoMasukCreatedBy")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -274,4 +275,22 @@ model SphItem {
   sph       Sph      @relation(fields: [sphId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PoMasuk {
+  id                 String    @id @default(cuid())
+  poNumber           String?
+  issueDate          DateTime?
+  distributorName    String
+  notes              String?   @db.Text
+  gdriveFileId       String
+  gdriveFileName     String
+  gdriveMimeType     String?
+  gdriveWebViewLink  String?
+  createdById        String
+  createdBy          User      @relation("PoMasukCreatedBy", fields: [createdById], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+  @@index([deletedAt])
 }

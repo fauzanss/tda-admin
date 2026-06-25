@@ -7,6 +7,11 @@ import { z } from "zod";
 
 import { requireFileEditor } from "@/lib/roles";
 import { generateDocumentNumber } from "@/lib/documents";
+import {
+  getDocumentEditPath,
+  getDocumentListPath,
+  getDocumentPreviewPath,
+} from "@/lib/document-paths";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
@@ -237,8 +242,8 @@ export async function createDocument(formData: FormData) {
 
   const document = await createByType(input, userId);
 
-  revalidatePath(`/admin/documents/${input.type}`);
-  redirect(`/admin/documents/${input.type}/${document.id}/edit`);
+  revalidatePath(getDocumentListPath(input.type));
+  redirect(getDocumentEditPath(input.type, document.id));
 }
 
 export async function updateDocument(documentId: string, formData: FormData) {
@@ -339,9 +344,9 @@ export async function updateDocument(documentId: string, formData: FormData) {
     });
   }
 
-  revalidatePath(`/admin/documents/${input.type}`);
-  revalidatePath(`/admin/documents/${input.type}/${documentId}/preview`);
-  redirect(`/admin/documents/${input.type}/${documentId}/edit?updated=1`);
+  revalidatePath(getDocumentListPath(input.type));
+  revalidatePath(getDocumentPreviewPath(input.type, documentId));
+  redirect(`${getDocumentEditPath(input.type, documentId)}?updated=1`);
 }
 
 export async function finalizeDocument(type: DocumentType, id: string) {
@@ -365,8 +370,8 @@ export async function finalizeDocument(type: DocumentType, id: string) {
     await prisma.sph.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   }
 
-  revalidatePath(`/admin/documents/${type}`);
-  revalidatePath(`/admin/documents/${type}/${id}/preview`);
+  revalidatePath(getDocumentListPath(type));
+  revalidatePath(getDocumentPreviewPath(type, id));
 }
 
 export async function deleteDocument(type: DocumentType, id: string) {
@@ -395,7 +400,7 @@ export async function deleteDocument(type: DocumentType, id: string) {
     }
   }
 
-  revalidatePath(`/admin/documents/${type}`);
+  revalidatePath(getDocumentListPath(type));
 }
 
 export async function duplicateDocument(type: DocumentType, id: string) {
@@ -439,8 +444,8 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       },
       select: { id: true },
     });
-    revalidatePath(`/admin/documents/${type}`);
-    redirect(`/admin/documents/${type}/${created.id}/edit`);
+    revalidatePath(getDocumentListPath(type));
+    redirect(getDocumentEditPath(type, created.id));
   }
 
   if (type === "PURCHASE_ORDER") {
@@ -477,8 +482,8 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       },
       select: { id: true },
     });
-    revalidatePath(`/admin/documents/${type}`);
-    redirect(`/admin/documents/${type}/${created.id}/edit`);
+    revalidatePath(getDocumentListPath(type));
+    redirect(getDocumentEditPath(type, created.id));
   }
 
   if (type === "SURAT_JALAN") {
@@ -514,8 +519,8 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       },
       select: { id: true },
     });
-    revalidatePath(`/admin/documents/${type}`);
-    redirect(`/admin/documents/${type}/${created.id}/edit`);
+    revalidatePath(getDocumentListPath(type));
+    redirect(getDocumentEditPath(type, created.id));
   }
 
   const source = await prisma.sph.findFirstOrThrow({
@@ -550,6 +555,6 @@ export async function duplicateDocument(type: DocumentType, id: string) {
     },
     select: { id: true },
   });
-  revalidatePath(`/admin/documents/${type}`);
-  redirect(`/admin/documents/${type}/${created.id}/edit`);
+  revalidatePath(getDocumentListPath(type));
+  redirect(getDocumentEditPath(type, created.id));
 }

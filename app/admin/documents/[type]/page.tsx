@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { DeleteDocumentButton } from "@/app/admin/documents/DeleteDocumentButton";
 import { DuplicateDocumentButton } from "@/app/admin/documents/DuplicateDocumentButton";
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { canWriteFiles } from "@/lib/role-guards";
 import { documentTypeLabels } from "@/lib/document-meta";
+import { getDocumentEditPath, getDocumentNewPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
@@ -30,7 +32,7 @@ function formatDateTime(date: Date) {
 }
 
 function getCompanyName(
-  type: "INVOICE" | "PURCHASE_ORDER" | "SURAT_JALAN" | "SPH",
+  type: "INVOICE" | "SURAT_JALAN" | "SPH",
   doc: {
     billToName?: string | null;
     orderToName?: string | null;
@@ -39,7 +41,6 @@ function getCompanyName(
   },
 ) {
   if (type === "INVOICE") return doc.billToName ?? "-";
-  if (type === "PURCHASE_ORDER") return doc.orderToName ?? "-";
   if (type === "SURAT_JALAN") return doc.toName ?? "-";
   return doc.recipientCompany ?? "-";
 }
@@ -51,13 +52,14 @@ export default async function DocumentListPage({
 }>) {
   const resolved = await params;
   const type = asDocumentType(resolved.type);
+  if (type === "PURCHASE_ORDER") {
+    redirect("/admin/po-keluar");
+  }
   const session = await getServerSession(authOptions);
   const canWrite = canWriteFiles(session?.user?.role as string | undefined);
   let documents;
   if (type === "INVOICE") {
     documents = await prisma.invoice.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
-  } else if (type === "PURCHASE_ORDER") {
-    documents = await prisma.purchaseOrder.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
   } else if (type === "SURAT_JALAN") {
     documents = await prisma.suratJalan.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
   } else {
@@ -69,7 +71,7 @@ export default async function DocumentListPage({
       <div className="d-flex align-items-center justify-content-between mb-3">
         <h1 className="h3 fw-semibold mb-0">{documentTypeLabels[type]}</h1>
         {canWrite && (
-          <Link href={`/admin/documents/${type}/new`} className="btn btn-primary">
+          <Link href={getDocumentNewPath(type)} className="btn btn-primary">
             + New Document
           </Link>
         )}
@@ -110,7 +112,7 @@ export default async function DocumentListPage({
                 <td>
                   {canWrite && (
                     <Link
-                      href={`/admin/documents/${type}/${doc.id}/edit`}
+                      href={getDocumentEditPath(type, doc.id)}
                       className="btn btn-link p-0 me-3 text-decoration-none"
                       title="Edit"
                     >
@@ -118,7 +120,7 @@ export default async function DocumentListPage({
                     </Link>
                   )}
                   <Link
-                    href={`/admin/documents/${type}/${doc.id}/preview`}
+                    href={getDocumentPreviewPath(type, doc.id)}
                     className="btn btn-link p-0 me-3 text-decoration-none"
                     title="Preview"
                   >

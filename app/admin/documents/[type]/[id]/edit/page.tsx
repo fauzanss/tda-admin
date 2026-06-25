@@ -4,6 +4,7 @@ import { finalizeDocument, updateDocument } from "@/app/admin/documents/actions"
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { documentTypeLabels } from "@/lib/document-meta";
+import { getDocumentListPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { authOptions } from "@/lib/auth";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
@@ -21,9 +22,12 @@ export default async function EditDocumentPage({
   const resolved = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
   const type = asDocumentType(resolved.type);
+  if (type === "PURCHASE_ORDER") {
+    redirect(`/admin/po-keluar/${resolved.id}/edit`);
+  }
   const session = await getServerSession(authOptions);
   if (!canWriteFiles(session?.user?.role as string | undefined)) {
-    redirect(`/admin/documents/${type}`);
+    redirect(getDocumentListPath(type));
   }
   const companies = await prisma.company.findMany({
     where: { isActive: true, ...notDeleted },
@@ -80,20 +84,15 @@ export default async function EditDocumentPage({
           where: { id: resolved.id, ...notDeleted },
           include: { items: { orderBy: { sortOrder: "asc" } } },
         })
-      : type === "PURCHASE_ORDER"
-        ? await prisma.purchaseOrder.findFirstOrThrow({
+      : type === "SURAT_JALAN"
+        ? await prisma.suratJalan.findFirstOrThrow({
             where: { id: resolved.id, ...notDeleted },
             include: { items: { orderBy: { sortOrder: "asc" } } },
           })
-        : type === "SURAT_JALAN"
-          ? await prisma.suratJalan.findFirstOrThrow({
-              where: { id: resolved.id, ...notDeleted },
-              include: { items: { orderBy: { sortOrder: "asc" } } },
-            })
-          : await prisma.sph.findFirstOrThrow({
-              where: { id: resolved.id, ...notDeleted },
-              include: { items: { orderBy: { sortOrder: "asc" } } },
-            });
+        : await prisma.sph.findFirstOrThrow({
+            where: { id: resolved.id, ...notDeleted },
+            include: { items: { orderBy: { sortOrder: "asc" } } },
+          });
 
   async function onSubmit(formData: FormData) {
     "use server";
@@ -123,17 +122,11 @@ export default async function EditDocumentPage({
     billToName:
       "billToName" in document
         ? document.billToName ?? null
-        : "orderToName" in document
-          ? document.orderToName ?? null
-          : "recipientName" in document
-            ? document.recipientName ?? null
-            : null,
-    billToAddress:
-      "billToAddress" in document
-        ? document.billToAddress ?? null
-        : "orderToAddress" in document
-          ? document.orderToAddress ?? null
+        : "recipientName" in document
+          ? document.recipientName ?? null
           : null,
+    billToAddress:
+      "billToAddress" in document ? document.billToAddress ?? null : null,
     deliveredToName:
       "deliveredToName" in document
         ? document.deliveredToName ?? null
@@ -169,7 +162,7 @@ export default async function EditDocumentPage({
         </h1>
         <div className="d-flex gap-2">
           <Link
-            href={`/admin/documents/${type}/${document.id}/preview`}
+            href={getDocumentPreviewPath(type, document.id)}
             className="btn btn-outline-secondary btn-sm"
           >
             Preview

@@ -4,6 +4,7 @@ import { createDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { documentTypeLabels } from "@/lib/document-meta";
+import { getDocumentListPath } from "@/lib/document-paths";
 import { authOptions } from "@/lib/auth";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
@@ -18,9 +19,12 @@ export default async function NewDocumentPage({
 }) {
   const resolved = await params;
   const type = asDocumentType(resolved.type);
+  if (type === "PURCHASE_ORDER") {
+    redirect("/admin/po-keluar/new");
+  }
   const session = await getServerSession(authOptions);
   if (!canWriteFiles(session?.user?.role as string | undefined)) {
-    redirect(`/admin/documents/${type}`);
+    redirect(getDocumentListPath(type));
   }
   const companies = await prisma.company.findMany({
     where: { isActive: true, ...notDeleted },

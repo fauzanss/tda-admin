@@ -10,9 +10,13 @@ import { isAdminRole } from "@/lib/role-guards";
 
 const fileLinks = [
   { href: "/admin/documents/SPH", label: "Quotation" },
-  { href: "/admin/documents/PURCHASE_ORDER", label: "Purchase Order" },
   { href: "/admin/documents/SURAT_JALAN", label: "Delivery Note" },
   { href: "/admin/documents/INVOICE", label: "Invoice" },
+];
+
+const poLinks = [
+  { href: "/admin/po-masuk", label: "PO Masuk" },
+  { href: "/admin/po-keluar", label: "PO Keluar" },
 ];
 
 const settingsLinks = [
@@ -79,6 +83,20 @@ export function AdminShell({
                 href={link.href}
                 className={`list-group-item list-group-item-action ps-4 ${
                   pathname === link.href ? "active" : ""
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="list-group-item fw-semibold bg-light">- PO -</div>
+            {poLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`list-group-item list-group-item-action ps-4 ${
+                  pathname === link.href || pathname.startsWith(`${link.href}/`)
+                    ? "active"
+                    : ""
                 }`}
               >
                 {link.label}
