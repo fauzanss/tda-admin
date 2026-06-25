@@ -3,6 +3,8 @@ import type { NextAuthOptions } from "next-auth";
 /** Penamaan cookie (prefix) supaya tidak tabrakan antar app di domain sama. */
 const TDA = "tda-";
 
+export const PENDING_2FA_COOKIE_NAME = `${TDA}pending-2fa`;
+
 /**
  * Pakai `__Secure-` (bukan `__Host-`) untuk semua cookie auth di production HTTPS.
  * `__Host-` bermasalah di beberapa reverse proxy / shared hosting (mis. Hostinger).
@@ -62,4 +64,15 @@ export function getSessionTokenCookieNameForMiddleware(): string {
     throw new Error("sessionToken cookie name is not set");
   }
   return c.sessionToken.name;
+}
+
+const LEGACY_NEXT_AUTH_SESSION_COOKIE_NAMES = [
+  "__Host-tda-next-auth.session-token",
+  "__Secure-tda-next-auth.session-token",
+  "tda-next-auth.session-token",
+] as const;
+
+/** Semua nama cookie session (aktif + legacy) untuk dibersihkan di middleware. */
+export function getAllNextAuthSessionCookieNames(): string[] {
+  return [getSessionTokenCookieNameForMiddleware(), ...LEGACY_NEXT_AUTH_SESSION_COOKIE_NAMES];
 }

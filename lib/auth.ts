@@ -39,13 +39,34 @@ export const authOptions: NextAuthOptions = {
       async authorize(rawCredentials) {
         const parsed = totpSignInSchema.safeParse(rawCredentials);
         if (!parsed.success) {
+          console.warn("[auth] credentials: invalid payload", {
+            issues: parsed.error.issues.map((i) => i.path.join(".")),
+          });
           return null;
         }
 
         const cookieStore = await cookies();
         const pendingRaw = cookieStore.get(PENDING_2FA_COOKIE_NAME)?.value;
-        const pending = pendingRaw ? verifyPending2FaToken(pendingRaw) : null;
-        if (!pending || pending.email !== parsed.data.email) {
+        if (!pendingRaw) {
+          console.warn("[auth] credentials: missing pending-2fa cookie", {
+            email: parsed.data.email,
+          });
+          return null;
+        }
+
+        const pending = verifyPending2FaToken(pendingRaw);
+        if (!pending) {
+          console.warn("[auth] credentials: pending-2fa cookie invalid or expired", {
+            email: parsed.data.email,
+          });
+          return null;
+        }
+        if (pending.email !== parsed.data.email) {
+          console.warn("[auth] credentials: pending email mismatch", {
+            pendingEmail: pending.email,
+            formEmail: parsed.data.email,
+            userId: pending.userId,
+          });
           return null;
         }
 
@@ -53,20 +74,48 @@ export const authOptions: NextAuthOptions = {
           where: { id: pending.userId },
         });
 
-        if (!user || user.isActive === false) {
+        if (!user) {
+          console.warn("[auth] credentials: user not found", { userId: pending.userId });
+          return null;
+        }
+        if (user.isActive === false) {
+          console.warn("[auth] credentials: user inactive", { userId: user.id, email: user.email });
           return null;
         }
 
         if (!user.totpEnabled || !user.totpSecret) {
+          console.warn("[auth] credentials: totp not configured", {
+            userId: user.id,
+            email: user.email,
+            totpEnabled: user.totpEnabled,
+            hasTotpSecret: Boolean(user.totpSecret),
+          });
           return null;
         }
 
-        const secret = decryptTotpSecret(user.totpSecret);
+        let secret: string;
+        try {
+          secret = decryptTotpSecret(user.totpSecret);
+        } catch (error) {
+          console.error("[auth] credentials: totp decrypt failed (secret rotated?)", {
+            userId: user.id,
+            email: user.email,
+            error: error instanceof Error ? error.message : "unknown",
+          });
+          return null;
+        }
+
         if (!verifyTotpCode(secret, parsed.data.totpCode)) {
+          console.warn("[auth] credentials: invalid totp code", {
+            userId: user.id,
+            email: user.email,
+            attempts: pending.attempts,
+          });
           return null;
         }
 
         await clearPending2FaCookie();
+        console.info("[auth] credentials: totp sign-in ok", { userId: user.id, email: user.email });
 
         return {
           id: user.id,

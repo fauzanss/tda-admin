@@ -2,7 +2,9 @@ import { createHmac } from "node:crypto";
 
 import { cookies } from "next/headers";
 
-export const PENDING_2FA_COOKIE_NAME = "tda-pending-2fa";
+import { PENDING_2FA_COOKIE_NAME } from "@/lib/auth-cookies";
+
+export { PENDING_2FA_COOKIE_NAME } from "@/lib/auth-cookies";
 export const PENDING_2FA_MAX_AGE_SECONDS = 300;
 export const MAX_TOTP_ATTEMPTS = 5;
 

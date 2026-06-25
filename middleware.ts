@@ -1,13 +1,40 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 
-import { getSessionTokenCookieNameForMiddleware } from "@/lib/auth-cookies";
+import {
+  getAllNextAuthSessionCookieNames,
+  getSessionTokenCookieNameForMiddleware,
+  PENDING_2FA_COOKIE_NAME,
+} from "@/lib/auth-cookies";
 import { canWriteFiles, isAdminRole } from "@/lib/role-guards";
 
 type TokenWithRole = { role?: string; mfaVerified?: boolean };
 
+const MID_LOGIN_PREFIXES = ["/login/two-factor", "/login/setup-authenticator"] as const;
+
+function isMidLoginPath(pathname: string) {
+  return MID_LOGIN_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+function clearSessionCookies(response: NextResponse) {
+  for (const name of getAllNextAuthSessionCookieNames()) {
+    response.cookies.delete(name);
+  }
+  return response;
+}
+
 export default withAuth(
   function middleware(req) {
+    if (req.nextUrl.pathname === "/login") {
+      const response = NextResponse.next();
+      response.cookies.delete(PENDING_2FA_COOKIE_NAME);
+      return response;
+    }
+
+    if (isMidLoginPath(req.nextUrl.pathname)) {
+      return clearSessionCookies(NextResponse.next());
+    }
+
     const role = (req.nextauth.token as TokenWithRole | undefined)?.role;
     const { pathname } = req.nextUrl;
 
@@ -59,7 +86,12 @@ export default withAuth(
       signIn: "/login",
     },
     callbacks: {
-      authorized: ({ token }) => Boolean(token) && (token as TokenWithRole).mfaVerified === true,
+      authorized: ({ req, token }) => {
+        if (req.nextUrl.pathname === "/login" || isMidLoginPath(req.nextUrl.pathname)) {
+          return true;
+        }
+        return Boolean(token) && (token as TokenWithRole).mfaVerified === true;
+      },
     },
     cookies: {
       sessionToken: {
@@ -70,5 +102,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/login", "/login/two-factor", "/login/setup-authenticator"],
 };

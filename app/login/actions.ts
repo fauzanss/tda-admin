@@ -40,6 +40,7 @@ export async function checkLoginPassword(formData: FormData): Promise<CheckLogin
     password: String(formData.get("password") ?? ""),
   });
   if (!parsed.success) {
+    console.warn("[auth] login: invalid email/password payload");
     return { ok: false, error: "Invalid email or password." };
   }
 
@@ -55,15 +56,22 @@ export async function checkLoginPassword(formData: FormData): Promise<CheckLogin
   });
 
   if (!user || user.isActive === false) {
+    console.warn("[auth] login: user not found or inactive", { email: parsed.data.email });
     return { ok: false, error: "Invalid email or password." };
   }
 
   const validPassword = await compare(parsed.data.password, user.passwordHash);
   if (!validPassword) {
+    console.warn("[auth] login: invalid password", { userId: user.id, email: user.email });
     return { ok: false, error: "Invalid email or password." };
   }
 
   await setPending2FaCookie(user.id, user.email);
+  console.info("[auth] login: password ok, pending 2fa set", {
+    userId: user.id,
+    email: user.email,
+    next: user.totpEnabled ? "verify" : "setup",
+  });
 
   return {
     ok: true,
@@ -176,7 +184,6 @@ export async function requirePending2FaOrRedirect(): Promise<{ email: string; mo
     select: { email: true, totpEnabled: true },
   });
   if (!user || user.email !== pending.email) {
-    await clearPending2FaCookie();
     redirect("/login");
   }
 
