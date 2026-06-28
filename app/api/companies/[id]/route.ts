@@ -27,6 +27,7 @@ export async function PUT(
     companyName: string;
     companyAlias?: string;
     address: string;
+    website?: string;
     isActive: boolean;
   };
 
@@ -38,6 +39,7 @@ export async function PUT(
         companyName: body.companyName.trim(),
         companyAlias: body.companyAlias?.trim() || null,
         address: body.address.trim(),
+        website: body.website?.trim() || null,
         isActive: body.isActive,
       },
     });
@@ -52,6 +54,7 @@ export async function PUT(
     SET companyName = ${body.companyName.trim()},
         companyAlias = ${body.companyAlias?.trim() || null},
         address = ${body.address.trim()},
+        website = ${body.website?.trim() || null},
         isActive = ${body.isActive},
         updatedAt = NOW()
     WHERE id = ${id} AND deletedAt IS NULL

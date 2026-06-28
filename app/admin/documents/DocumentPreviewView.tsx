@@ -5,9 +5,15 @@ import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { getDocumentStrings } from "@/lib/document-i18n";
 import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
-import { formatCurrency, formatLongDate } from "@/lib/documents";
+import { formatCurrency, formatLongDate, parseNotes } from "@/lib/documents";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
+
+function renderBulletLines(text: string) {
+  return parseNotes(text).map((line, index) => (
+    <div key={`${index}-${line}`}>- {line}</div>
+  ));
+}
 
 function formatDateDDMMYYYY(date: Date) {
   const day = String(date.getDate()).padStart(2, "0");
@@ -375,26 +381,37 @@ export async function DocumentPreviewView({
           </div>
         )}
 
-        {paymentTerms && type !== "SURAT_JALAN" && (
-          <div className="payment-info">
-            <div className="payment-title">{type === "INVOICE" ? t.paymentTransfer : t.paymentTerms}</div>
-            <div style={{ whiteSpace: "pre-line" }}>{paymentTerms}</div>
+        {type === "SPH" && (paymentTerms || offerNotes.length > 0) ? (
+          <div className="doc-side-by-side">
+            {paymentTerms && (
+              <div className="payment-info">
+                <div className="payment-title">{t.paymentTerms}</div>
+                {renderBulletLines(paymentTerms)}
+              </div>
+            )}
+            {offerNotes.length > 0 && (
+              <div className="payment-info">
+                <div className="payment-title">{t.offerNotes}</div>
+                {offerNotes.map((note) => (
+                  <div key={String(note)}>- {String(note)}</div>
+                ))}
+              </div>
+            )}
           </div>
+        ) : (
+          paymentTerms &&
+          type !== "SURAT_JALAN" && (
+            <div className="payment-info">
+              <div className="payment-title">{type === "INVOICE" ? t.paymentTransfer : t.paymentTerms}</div>
+              {renderBulletLines(paymentTerms)}
+            </div>
+          )
         )}
 
         {deliveryNotes && type === "SURAT_JALAN" && (
           <div className="payment-info">
             <div className="payment-title">{t.deliveryInstructions}</div>
             <div style={{ whiteSpace: "pre-line" }}>{deliveryNotes}</div>
-          </div>
-        )}
-
-        {offerNotes.length > 0 && type === "SPH" && (
-          <div className="doc-section">
-            <div className="payment-title">{t.offerNotes}</div>
-            {offerNotes.map((note) => (
-              <div key={String(note)}>- {String(note)}</div>
-            ))}
           </div>
         )}
 

@@ -26,11 +26,12 @@ export async function GET() {
       companyName: string;
       companyAlias: string | null;
       address: string;
+      website: string | null;
       isActive: boolean;
       createdAt: Date;
       updatedAt: Date;
     }>
-  >`SELECT id, companyName, companyAlias, address, isActive, createdAt, updatedAt FROM Company ORDER BY isActive DESC, companyName ASC`;
+  >`SELECT id, companyName, companyAlias, address, website, isActive, createdAt, updatedAt FROM Company ORDER BY isActive DESC, companyName ASC`;
 
   return NextResponse.json(rows);
 }
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
     companyName: string;
     companyAlias?: string;
     address: string;
+    website?: string;
     isActive: boolean;
   };
 
@@ -50,6 +52,7 @@ export async function POST(request: Request) {
         companyName: body.companyName.trim(),
         companyAlias: body.companyAlias?.trim() || null,
         address: body.address.trim(),
+        website: body.website?.trim() || null,
         isActive: body.isActive,
       },
     });
@@ -57,8 +60,8 @@ export async function POST(request: Request) {
   }
 
   await prisma.$executeRaw`
-    INSERT INTO Company (id, identifier, companyName, companyAlias, address, isActive, createdAt, updatedAt)
-    VALUES (UUID(), UUID(), ${body.companyName.trim()}, ${body.companyAlias?.trim() || null}, ${body.address.trim()}, ${body.isActive}, NOW(), NOW())
+    INSERT INTO Company (id, identifier, companyName, companyAlias, address, website, isActive, createdAt, updatedAt)
+    VALUES (UUID(), UUID(), ${body.companyName.trim()}, ${body.companyAlias?.trim() || null}, ${body.address.trim()}, ${body.website?.trim() || null}, ${body.isActive}, NOW(), NOW())
   `;
   return NextResponse.json({ ok: true });
 }

@@ -187,6 +187,17 @@ body {
   margin: 6px 0;
 }
 
+.doc-side-by-side {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.doc-side-by-side .payment-info {
+  flex: 1;
+  margin-top: 0;
+}
+
 .address-box {
   flex: 1;
   border: 1px solid #ddd;

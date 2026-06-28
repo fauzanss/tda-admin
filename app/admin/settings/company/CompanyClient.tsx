@@ -7,6 +7,7 @@ type Company = {
   companyName: string;
   companyAlias: string | null;
   address: string;
+  website: string | null;
   isActive: boolean;
   updatedAt: string | Date;
 };
@@ -15,6 +16,7 @@ type CompanyForm = {
   companyName: string;
   companyAlias: string;
   address: string;
+  website: string;
   isActive: boolean;
 };
 
@@ -33,6 +35,7 @@ const defaultForm: CompanyForm = {
   companyName: "",
   companyAlias: "",
   address: "",
+  website: "",
   isActive: true,
 };
 
@@ -57,6 +60,7 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
       companyName: company.companyName,
       companyAlias: company.companyAlias ?? "",
       address: company.address,
+      website: company.website ?? "",
       isActive: company.isActive,
     });
     setShowModal(true);
@@ -76,6 +80,7 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
       companyName: form.companyName,
       companyAlias: form.companyAlias,
       address: form.address,
+      website: form.website,
       isActive: form.isActive,
     };
 
@@ -124,6 +129,7 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
                 <th>Company Name</th>
                 <th>Company Alias</th>
                 <th>Address</th>
+                <th>Website</th>
                 <th>Is Active</th>
                 <th>Last Updated</th>
                 <th>Actions</th>
@@ -132,7 +138,7 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
             <tbody>
               {companies.length === 0 && (
                 <tr>
-                  <td colSpan={6}>No data available.</td>
+                  <td colSpan={7}>No data available.</td>
                 </tr>
               )}
               {companies.map((company) => (
@@ -140,6 +146,7 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
                   <td>{company.companyName}</td>
                   <td>{company.companyAlias || "-"}</td>
                   <td style={{ whiteSpace: "pre-line" }}>{company.address}</td>
+                  <td>{company.website || "-"}</td>
                   <td>
                     <span className={`badge ${company.isActive ? "text-bg-success" : "text-bg-secondary"}`}>
                       {company.isActive ? "Yes" : "No"}
@@ -217,6 +224,18 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
                     value={form.address}
                     onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                     required
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label" htmlFor="companyWebsite">
+                    Website
+                  </label>
+                  <input
+                    id="companyWebsite"
+                    className="form-control"
+                    placeholder="https://example.com"
+                    value={form.website}
+                    onChange={(e) => setForm((prev) => ({ ...prev, website: e.target.value }))}
                   />
                 </div>
                 <div className="col-12 col-md-6">

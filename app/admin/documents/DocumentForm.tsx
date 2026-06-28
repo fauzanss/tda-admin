@@ -514,9 +514,35 @@ export function DocumentForm({
         </div>
       )}
 
+      {isSph && (
+        <div className="row g-3 mb-3">
+          <div className="col-12">
+            <label className="form-label">Subject</label>
+            <input
+              name="subject"
+              className="form-control"
+              defaultValue={defaultValue?.subject ?? ""}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="row g-3 mb-3">
-        {isSph && <Field name="subject" label="Subject" defaultValue={defaultValue?.subject ?? ""} />}
-        {(isInvoice || isPo || isSph) && (
+        {isSph && (
+          <>
+            <TextArea
+              name="paymentTerms"
+              label="Payment Terms"
+              defaultValue={defaultValue?.paymentTerms ?? ""}
+            />
+            <TextArea
+              name="notesText"
+              label="Offer Notes (1 line = 1 point)"
+              defaultValue={sphNotes.offerNotes}
+            />
+          </>
+        )}
+        {(isInvoice || isPo) && (
           <TextArea name="paymentTerms" label="Payment Terms" defaultValue={defaultValue?.paymentTerms ?? ""} />
         )}
         {isSuratJalan && (
@@ -524,16 +550,10 @@ export function DocumentForm({
         )}
         {isSph && (
           <TextArea
-            name="notesText"
-            label="Offer Notes (1 line = 1 point)"
-            defaultValue={sphNotes.offerNotes}
-          />
-        )}
-        {isSph && (
-          <TextArea
             name="additionalNotesText"
             label="Additional Information (1 line = 1 point)"
             defaultValue={sphNotes.additionalNotes}
+            columnClass="col-12"
           />
         )}
       </div>
@@ -585,8 +605,8 @@ export function DocumentForm({
               <input
                 className="form-control"
                 type="number"
-                min={0.01}
-                step={0.01}
+                min={1}
+                step={1}
                 value={line.quantity}
                 onChange={(event) => updateLine(index, { quantity: Number(event.target.value) })}
               />
@@ -679,13 +699,15 @@ function TextArea({
   name,
   label,
   defaultValue,
+  columnClass = "col-12 col-md-6",
 }: {
   name: string;
   label: string;
   defaultValue?: string;
+  columnClass?: string;
 }) {
   return (
-    <div className="col-12 col-md-6">
+    <div className={columnClass}>
       <label className="form-label">{label}</label>
       <textarea
         name={name}

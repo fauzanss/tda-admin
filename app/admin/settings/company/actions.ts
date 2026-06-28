@@ -12,6 +12,7 @@ const schema = z.object({
   companyName: z.string().min(1),
   companyAlias: z.string().optional(),
   address: z.string().min(1),
+  website: z.string().optional(),
   isActive: z.enum(["true", "false"]).default("true"),
 });
 
@@ -37,6 +38,7 @@ export async function createCompany(formData: FormData) {
     companyName: String(formData.get("companyName") ?? ""),
     companyAlias: String(formData.get("companyAlias") ?? ""),
     address: String(formData.get("address") ?? ""),
+    website: String(formData.get("website") ?? ""),
     isActive: String(formData.get("isActive") ?? "true"),
   });
 
@@ -47,6 +49,7 @@ export async function createCompany(formData: FormData) {
         companyName: input.companyName.trim(),
         companyAlias: toNullable(input.companyAlias),
         address: input.address.trim(),
+        website: toNullable(input.website),
         isActive: input.isActive === "true",
       },
     });
@@ -54,8 +57,8 @@ export async function createCompany(formData: FormData) {
     const id = randomUUID();
     const identifier = randomUUID();
     await prisma.$executeRaw`
-      INSERT INTO Company (id, identifier, companyName, companyAlias, address, isActive, createdAt, updatedAt, deletedAt)
-      VALUES (${id}, ${identifier}, ${input.companyName.trim()}, ${toNullable(input.companyAlias)}, ${input.address.trim()}, ${input.isActive === "true"}, NOW(), NOW(), NULL)
+      INSERT INTO Company (id, identifier, companyName, companyAlias, address, website, isActive, createdAt, updatedAt, deletedAt)
+      VALUES (${id}, ${identifier}, ${input.companyName.trim()}, ${toNullable(input.companyAlias)}, ${input.address.trim()}, ${toNullable(input.website)}, ${input.isActive === "true"}, NOW(), NOW(), NULL)
     `;
   }
 
@@ -69,6 +72,7 @@ export async function updateCompany(formData: FormData) {
     companyName: String(formData.get("companyName") ?? ""),
     companyAlias: String(formData.get("companyAlias") ?? ""),
     address: String(formData.get("address") ?? ""),
+    website: String(formData.get("website") ?? ""),
     isActive: String(formData.get("isActive") ?? "true"),
   });
 
@@ -80,6 +84,7 @@ export async function updateCompany(formData: FormData) {
         companyName: input.companyName.trim(),
         companyAlias: toNullable(input.companyAlias),
         address: input.address.trim(),
+        website: toNullable(input.website),
         isActive: input.isActive === "true",
       },
     });
@@ -92,6 +97,7 @@ export async function updateCompany(formData: FormData) {
       SET companyName = ${input.companyName.trim()},
           companyAlias = ${toNullable(input.companyAlias)},
           address = ${input.address.trim()},
+          website = ${toNullable(input.website)},
           isActive = ${input.isActive === "true"},
           updatedAt = NOW()
       WHERE id = ${id} AND deletedAt IS NULL
