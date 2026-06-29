@@ -28,6 +28,7 @@ export type DocumentStrings = {
   itemDescription: string;
   itemName: string;
   quantity: string;
+  qty: string;
   unit: string;
   condition: string;
   unitPrice: string;
@@ -95,6 +96,7 @@ const sharedEn: Omit<
   attnPrefix: "Attn.",
   itemNo: "No.",
   quantity: "Quantity",
+  qty: "Qty",
   unit: "Unit",
   condition: "Condition",
   price: "Price",
@@ -135,6 +137,7 @@ const sharedId: typeof sharedEn = {
   attnPrefix: "Yth.",
   itemNo: "No.",
   quantity: "Jumlah",
+  qty: "Qty",
   unit: "Satuan",
   condition: "Kondisi",
   price: "Harga",
@@ -198,7 +201,8 @@ function buildStrings(
       documentTitle: locale === "EN" ? "QUOTATION" : "PENAWARAN",
       number: locale === "EN" ? "Number" : "Nomor",
       itemName: locale === "EN" ? "Item Name" : "Nama Barang",
-      unitPrice: locale === "EN" ? "Unit Price (Rp)" : "Harga Satuan (Rp)",
+      unitPrice: locale === "EN" ? "Unit Price (IDR)" : "Harga Satuan (IDR)",
+      total: locale === "EN" ? "Total (IDR)" : "Total (IDR)",
       paymentTerms: locale === "EN" ? "Payment Terms" : "Syarat Pembayaran",
       sphIntroGreeting: locale === "EN" ? "Dear Sir/Madam," : "Dengan hormat,",
       sphIntroBody: (partnerName: string) =>

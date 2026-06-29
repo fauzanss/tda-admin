@@ -226,6 +226,13 @@ body {
   line-height: 1.15;
 }
 
+.item-table .col-qty {
+  width: 1%;
+  white-space: nowrap;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
 .item-table.doc-totals-table {
   margin-top: 8px;
   width: 360px;
@@ -401,6 +408,123 @@ body {
 
   .doc-preview {
     break-inside: avoid;
+  }
+
+  .doc-preview-page {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .doc-preview--sph {
+    zoom: 1;
+    padding: 5mm 8mm !important;
+    font-size: 9.5px;
+    line-height: 1.1;
+  }
+
+  .doc-preview--sph .letterhead {
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom-width: 2px;
+  }
+
+  .doc-preview--sph .letterhead-logo {
+    width: 72px;
+  }
+
+  .doc-preview--sph .doc-qr-img {
+    width: 46px;
+    height: 46px;
+  }
+
+  .doc-preview--sph .company-name {
+    font-size: 14px;
+  }
+
+  .doc-preview--sph .company-address,
+  .doc-preview--sph .company-contact {
+    font-size: 10px;
+  }
+
+  .doc-preview--sph .invoice-title {
+    font-size: 15px;
+    margin: 2px 0 4px;
+  }
+
+  .doc-preview--sph .document-info {
+    margin-bottom: 3px;
+  }
+
+  .doc-preview--sph .info-row {
+    font-size: 10px;
+    margin-bottom: 0;
+  }
+
+  .doc-preview--sph .doc-section {
+    margin-top: 3px;
+    font-size: 10px;
+  }
+
+  .doc-preview--sph .doc-section + .doc-section {
+    margin-top: 3px;
+  }
+
+  .doc-preview--sph .address-section,
+  .doc-preview--sph .doc-side-by-side {
+    margin: 3px 0;
+    gap: 6px;
+  }
+
+  .doc-preview--sph .address-box,
+  .doc-preview--sph .payment-info {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .doc-preview--sph .item-table {
+    margin-top: 4px;
+  }
+
+  .doc-preview--sph .item-table th,
+  .doc-preview--sph .item-table td {
+    padding: 2px 4px;
+    font-size: 10px;
+    line-height: 1.12;
+  }
+
+  .doc-preview--sph .line-detail {
+    font-size: 8.5px;
+    line-height: 1.1;
+  }
+
+  .doc-preview--sph .total-section {
+    margin-top: 4px;
+  }
+
+  .doc-preview--sph .total-row {
+    font-size: 11px;
+  }
+
+  .doc-preview--sph .signature-section {
+    margin-top: 4px;
+  }
+
+  .doc-preview--sph .signature-image {
+    width: 72px;
+    height: auto;
+    margin: 2px 0;
+  }
+
+  .doc-preview--sph .signature-line {
+    width: 140px;
+  }
+
+  .doc-preview--sph .signature-name {
+    margin-top: 2px;
+  }
+
+  .doc-preview--sph .signature-left > div {
+    line-height: 1.1;
   }
 
   @page {

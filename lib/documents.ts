@@ -52,10 +52,14 @@ function getNumberLocale(locale?: DocumentLocale | null) {
 }
 
 export function formatCurrency(amount: number, locale?: DocumentLocale | null) {
-  return `IDR ${new Intl.NumberFormat(getNumberLocale(locale), {
+  return `IDR ${formatCurrencyAmount(amount, locale)}`;
+}
+
+export function formatCurrencyAmount(amount: number, locale?: DocumentLocale | null) {
+  return new Intl.NumberFormat(getNumberLocale(locale), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount)}`;
+  }).format(amount);
 }
 
 export function formatLongDate(date: Date, locale?: DocumentLocale | null) {

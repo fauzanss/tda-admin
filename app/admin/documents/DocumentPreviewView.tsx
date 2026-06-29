@@ -5,7 +5,7 @@ import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { getDocumentStrings } from "@/lib/document-i18n";
 import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
-import { formatCurrency, formatLongDate, parseNotes } from "@/lib/documents";
+import { formatCurrency, formatCurrencyAmount, formatLongDate, parseNotes } from "@/lib/documents";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
@@ -194,10 +194,10 @@ export async function DocumentPreviewView({
   const qrDataUrl = await getDocumentQrDataUrl(previewUrl);
 
   return (
-    <main className="relative bg-slate-200 p-4">
+    <main className="doc-preview-page relative bg-slate-200 p-4">
       <PrintButton />
       <article
-        className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}`}
+        className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
         data-doc-locale={locale}
       >
         <div className="letterhead">
@@ -284,7 +284,9 @@ export async function DocumentPreviewView({
             ) : (
               <tr>
                 <th>{type === "SPH" ? t.itemName : t.itemDescription}</th>
-                <th className="text-center">{t.quantity}</th>
+                <th className={`text-center${type === "SPH" ? " col-qty" : ""}`}>
+                  {type === "SPH" ? t.qty : t.quantity}
+                </th>
                 <th className="text-center">{t.unit}</th>
                 <th className="text-right">{type === "SPH" ? t.unitPrice : t.price}</th>
                 <th className="text-right">{t.total}</th>
@@ -315,13 +317,19 @@ export async function DocumentPreviewView({
                     <div>{line.description}</div>
                     {renderDetail(type, line.detail)}
                   </td>
-                  <td className="text-center">{Number(line.quantity)}</td>
+                  <td className={`text-center${type === "SPH" ? " col-qty" : ""}`}>
+                    {Number(line.quantity)}
+                  </td>
                   <td className="text-center">{line.unit}</td>
                   <td className="text-right">
-                    {formatCurrency(Number(line.unitPrice), locale)}
+                    {type === "SPH"
+                      ? formatCurrencyAmount(Number(line.unitPrice), locale)
+                      : formatCurrency(Number(line.unitPrice), locale)}
                   </td>
                   <td className="text-right">
-                    {formatCurrency(lineTotal, locale)}
+                    {type === "SPH"
+                      ? formatCurrencyAmount(lineTotal, locale)
+                      : formatCurrency(lineTotal, locale)}
                   </td>
                 </tr>
               );
@@ -375,6 +383,12 @@ export async function DocumentPreviewView({
               </tr>
             </tbody>
           </table>
+        ) : type === "SPH" ? (
+          <div className="total-section">
+            <div className="total-row">
+              {t.grandTotal} (IDR): {formatCurrencyAmount(total, locale)}
+            </div>
+          </div>
         ) : type !== "SURAT_JALAN" && (
           <div className="total-section">
             <div className="total-row">{t.grandTotal}: {formatCurrency(total, locale)}</div>
