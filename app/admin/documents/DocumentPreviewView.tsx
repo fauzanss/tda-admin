@@ -395,22 +395,18 @@ export async function DocumentPreviewView({
           </div>
         )}
 
-        {type === "SPH" && (paymentTerms || offerNotes.length > 0) ? (
+        {type === "SPH" ? (
           <div className="doc-side-by-side">
-            {paymentTerms && (
-              <div className="payment-info">
-                <div className="payment-title">{t.paymentTerms}</div>
-                {renderBulletLines(paymentTerms)}
-              </div>
-            )}
-            {offerNotes.length > 0 && (
-              <div className="payment-info">
-                <div className="payment-title">{t.offerNotes}</div>
-                {offerNotes.map((note) => (
-                  <div key={String(note)}>- {String(note)}</div>
-                ))}
-              </div>
-            )}
+            <div className="payment-info">
+              <div className="payment-title">{t.paymentTerms}</div>
+              {paymentTerms ? renderBulletLines(paymentTerms) : <div>-</div>}
+            </div>
+            <div className="payment-info">
+              <div className="payment-title">{t.offerNotes}</div>
+              {offerNotes.length > 0
+                ? renderBulletLines(offerNotes.join("\n"))
+                : <div>-</div>}
+            </div>
           </div>
         ) : (
           paymentTerms &&

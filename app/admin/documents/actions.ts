@@ -445,19 +445,35 @@ export async function finalizeDocument(type: DocumentType, id: string) {
 
   if (type === "INVOICE") {
     const doc = await prisma.invoice.findFirstOrThrow({ where: { id, ...notDeleted } });
-    const number = doc.documentNumber ?? (await generateDocumentNumber(type, doc.issueDate));
+    const number =
+      doc.documentNumber ??
+      (await generateDocumentNumber(type, doc.issueDate, {
+        clientName: doc.billToName ?? doc.deliveredToName,
+      }));
     await prisma.invoice.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else if (type === "PURCHASE_ORDER") {
     const doc = await prisma.purchaseOrder.findFirstOrThrow({ where: { id, ...notDeleted } });
-    const number = doc.documentNumber ?? (await generateDocumentNumber(type, doc.issueDate));
+    const number =
+      doc.documentNumber ??
+      (await generateDocumentNumber(type, doc.issueDate, {
+        clientName: doc.orderToName ?? doc.deliveredToName,
+      }));
     await prisma.purchaseOrder.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else if (type === "SURAT_JALAN") {
     const doc = await prisma.suratJalan.findFirstOrThrow({ where: { id, ...notDeleted } });
-    const number = doc.documentNumber ?? (await generateDocumentNumber(type, doc.issueDate));
+    const number =
+      doc.documentNumber ??
+      (await generateDocumentNumber(type, doc.issueDate, {
+        clientName: doc.toName,
+      }));
     await prisma.suratJalan.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else {
     const doc = await prisma.sph.findFirstOrThrow({ where: { id, ...notDeleted } });
-    const number = doc.documentNumber ?? (await generateDocumentNumber("SPH", doc.issueDate));
+    const number =
+      doc.documentNumber ??
+      (await generateDocumentNumber("SPH", doc.issueDate, {
+        clientName: doc.recipientCompany ?? doc.recipientName,
+      }));
     await prisma.sph.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   }
 

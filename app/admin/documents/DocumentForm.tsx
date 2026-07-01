@@ -526,8 +526,8 @@ export function DocumentForm({
         </div>
       )}
 
-      {isSph && (
-        <div className="row g-3 mb-3">
+      <div className="row g-3 mb-3">
+        {isSph && (
           <div className="col-12">
             <label className="form-label">Subject</label>
             <input
@@ -536,24 +536,25 @@ export function DocumentForm({
               defaultValue={defaultValue?.subject ?? ""}
             />
           </div>
+        )}
+      </div>
+
+      {isSph && (
+        <div className="row g-3 mb-3">
+          <TextArea
+            name="paymentTerms"
+            label="Payment Terms"
+            defaultValue={defaultValue?.paymentTerms ?? ""}
+          />
+          <TextArea
+            name="notesText"
+            label="Offer Notes (1 line = 1 point)"
+            defaultValue={sphNotes.offerNotes}
+          />
         </div>
       )}
 
       <div className="row g-3 mb-3">
-        {isSph && (
-          <>
-            <TextArea
-              name="paymentTerms"
-              label="Payment Terms"
-              defaultValue={defaultValue?.paymentTerms ?? ""}
-            />
-            <TextArea
-              name="notesText"
-              label="Offer Notes (1 line = 1 point)"
-              defaultValue={sphNotes.offerNotes}
-            />
-          </>
-        )}
         {(isInvoice) && (
           <TextArea name="paymentTerms" label="Payment Terms" defaultValue={defaultValue?.paymentTerms ?? ""} />
         )}

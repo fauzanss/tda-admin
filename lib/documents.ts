@@ -3,20 +3,37 @@ import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
-const documentPrefixes: Record<DocumentType, string> = {
-  INVOICE: "INV/TDA",
-  PURCHASE_ORDER: "PO/TDA",
-  SURAT_JALAN: "SJ/TDA",
-  SPH: "SPH/TDA",
+const documentNumberPrefixes: Record<DocumentType, string> = {
+  INVOICE: "INV",
+  PURCHASE_ORDER: "PO",
+  SURAT_JALAN: "DO",
+  SPH: "SPH",
 };
 
-export async function generateDocumentNumber(type: DocumentType, date: Date) {
-  const year = date.getFullYear();
-  const yearStart = new Date(year, 0, 1);
-  const yearEnd = new Date(year + 1, 0, 1);
-  const prefix = documentPrefixes[type];
-  const pattern = new RegExp(String.raw`^${prefix}/(\d+)/${year}$`);
+function buildClientSlug(name: string | null | undefined) {
+  const slug = (name ?? "CLIENT").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return slug.slice(0, 24) || "CLIENT";
+}
 
+export function formatTdaDocumentNumber(
+  prefix: string,
+  clientSlug: string,
+  sequence: number,
+  year: number,
+) {
+  return `${prefix}-TDA-${clientSlug}-${String(sequence).padStart(3, "0")}-${year}`;
+}
+
+/** @deprecated Use formatTdaDocumentNumber */
+export function formatSphDocumentNumber(clientSlug: string, sequence: number, year: number) {
+  return formatTdaDocumentNumber("SPH", clientSlug, sequence, year);
+}
+
+async function listFinalDocumentNumbers(
+  type: DocumentType,
+  yearStart: Date,
+  yearEnd: Date,
+) {
   const where = {
     ...notDeleted,
     issueDate: { gte: yearStart, lt: yearEnd },
@@ -24,15 +41,31 @@ export async function generateDocumentNumber(type: DocumentType, date: Date) {
     documentNumber: { not: null },
   };
 
-  const numbersByType: Record<DocumentType, () => Promise<Array<{ documentNumber: string | null }>>> = {
-    INVOICE: () => prisma.invoice.findMany({ where, select: { documentNumber: true } }),
-    PURCHASE_ORDER: () =>
-      prisma.purchaseOrder.findMany({ where, select: { documentNumber: true } }),
-    SURAT_JALAN: () => prisma.suratJalan.findMany({ where, select: { documentNumber: true } }),
-    SPH: () => prisma.sph.findMany({ where, select: { documentNumber: true } }),
-  };
+  switch (type) {
+    case "INVOICE":
+      return prisma.invoice.findMany({ where, select: { documentNumber: true } });
+    case "PURCHASE_ORDER":
+      return prisma.purchaseOrder.findMany({ where, select: { documentNumber: true } });
+    case "SURAT_JALAN":
+      return prisma.suratJalan.findMany({ where, select: { documentNumber: true } });
+    case "SPH":
+      return prisma.sph.findMany({ where, select: { documentNumber: true } });
+  }
+}
 
-  const rows = await numbersByType[type]();
+export async function generateDocumentNumber(
+  type: DocumentType,
+  date: Date,
+  options?: { clientName?: string | null },
+) {
+  const prefix = documentNumberPrefixes[type];
+  const clientSlug = buildClientSlug(options?.clientName);
+  const year = date.getFullYear();
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year + 1, 0, 1);
+  const pattern = new RegExp(String.raw`^${prefix}-TDA-${clientSlug}-(\d+)-${year}$`);
+
+  const rows = await listFinalDocumentNumbers(type, yearStart, yearEnd);
   const maxSequence = rows.reduce((max, row) => {
     const value = row.documentNumber;
     if (!value) return max;
@@ -43,8 +76,7 @@ export async function generateDocumentNumber(type: DocumentType, date: Date) {
     return Math.max(max, seq);
   }, 0);
 
-  const sequence = String(maxSequence + 1).padStart(3, "0");
-  return `${prefix}/${sequence}/${year}`;
+  return formatTdaDocumentNumber(prefix, clientSlug, maxSequence + 1, year);
 }
 
 function getNumberLocale(locale?: DocumentLocale | null) {

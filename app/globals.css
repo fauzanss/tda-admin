@@ -49,7 +49,7 @@ body {
 }
 
 .doc-preview--invoice::before {
-  content: "TDA Invoice";
+  content: "TDA INVOICE";
   position: absolute;
   left: 50%;
   top: 50%;
