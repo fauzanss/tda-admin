@@ -3,10 +3,16 @@ import { notFound, redirect } from "next/navigation";
 
 import { finalizeDocument, updateDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
+import {
+  GdriveFilePreviewPanel,
+  InstallmentsPanel,
+  LinkedIncomingPoPanel,
+} from "@/app/admin/po/PoPanels";
 import { getPoKeluarFormData } from "@/app/admin/po-keluar/form-data";
 import { DocumentType } from "@/generated/prisma/client";
 import { authOptions } from "@/lib/auth";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
+import { toInstallmentRows } from "@/lib/po-payment";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -24,17 +30,29 @@ export default async function EditPoKeluarPage({
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) ?? {};
   const session = await getServerSession(authOptions);
-  if (!canWriteFiles(session?.user?.role as string | undefined)) {
+  const canWrite = canWriteFiles(session?.user?.role as string | undefined);
+  if (!canWrite) {
     redirect("/admin/po-keluar");
   }
 
-  const [{ companies, purchaseOrders, suratJalans }, document] = await Promise.all([
-    getPoKeluarFormData(),
-    prisma.purchaseOrder.findFirst({
-      where: { id, ...notDeleted },
-      include: { items: { orderBy: { sortOrder: "asc" } } },
-    }),
-  ]);
+  const [{ companies, purchaseOrders, suratJalans, incomingPoOptions }, document] =
+    await Promise.all([
+      getPoKeluarFormData(),
+      prisma.purchaseOrder.findFirst({
+        where: { id, ...notDeleted },
+        include: {
+          items: { orderBy: { sortOrder: "asc" } },
+          installments: { orderBy: { sortOrder: "asc" } },
+          poMasukLinks: {
+            include: {
+              poMasuk: {
+                select: { id: true, poNumber: true, distributorName: true },
+              },
+            },
+          },
+        },
+      }),
+    ]);
 
   if (!document) {
     notFound();
@@ -50,6 +68,9 @@ export default async function EditPoKeluarPage({
     await finalizeDocument(PO_KELUAR_TYPE, document!.id);
   }
 
+  const installmentRows = toInstallmentRows(document.installments);
+  const linkedIncoming = document.poMasukLinks.map((link) => link.poMasuk);
+
   const defaultValue = {
     locale: document.locale,
     duplicatedFromNumber: document.duplicatedFromNumber ?? null,
@@ -63,6 +84,17 @@ export default async function EditPoKeluarPage({
     salesPerson: null,
     taxId: document.taxId ?? null,
     paymentTerms: document.paymentTerms ?? null,
+    paymentTermType: document.paymentTermType,
+    installments: installmentRows.map((row) => ({
+      label: row.label ?? undefined,
+      percentage: row.percentage,
+      amount: row.amount ?? undefined,
+      dueDate: row.dueDate.toISOString().slice(0, 10),
+      notes: row.notes ?? undefined,
+    })),
+    linkedPoMasukIds: linkedIncoming.map((po) => po.id),
+    gdriveWebViewLink: document.gdriveWebViewLink,
+    gdriveFileName: document.gdriveFileName,
     deliveryNotes: document.deliveryNotes ?? null,
     billToName: document.orderToName ?? null,
     billToAddress: document.orderToAddress ?? null,
@@ -108,11 +140,24 @@ export default async function EditPoKeluarPage({
           </form>
         </div>
       </div>
+
+      <LinkedIncomingPoPanel links={linkedIncoming} />
+      <InstallmentsPanel installments={installmentRows} canWrite={canWrite} />
+
+      {document.gdriveFileId && (
+        <GdriveFilePreviewPanel
+          fileId={document.gdriveFileId}
+          fileName={document.gdriveFileName}
+          webViewLink={document.gdriveWebViewLink}
+        />
+      )}
+
       <DocumentForm
         type={PO_KELUAR_TYPE}
         companies={companies}
         purchaseOrders={purchaseOrders}
         suratJalans={suratJalans}
+        incomingPoOptions={incomingPoOptions}
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}
         onSubmit={onSubmit}

@@ -32,6 +32,9 @@ export default async function PoMasukListPage() {
   const records = await prisma.poMasuk.findMany({
     where: { ...notDeleted },
     orderBy: { createdAt: "desc" },
+    include: {
+      _count: { select: { purchaseOrderLinks: true } },
+    },
   });
 
   return (
@@ -53,6 +56,8 @@ export default async function PoMasukListPage() {
                 <th>No PO</th>
                 <th>Distributor</th>
                 <th>Date</th>
+                <th>Payment</th>
+                <th>Linked</th>
                 <th>File</th>
                 <th>Last Updated</th>
                 <th>Actions</th>
@@ -61,7 +66,7 @@ export default async function PoMasukListPage() {
             <tbody>
               {records.length === 0 && (
                 <tr>
-                  <td colSpan={6}>No data available.</td>
+                  <td colSpan={8}>No data available.</td>
                 </tr>
               )}
               {records.map((record) => (
@@ -69,7 +74,19 @@ export default async function PoMasukListPage() {
                   <td>{record.poNumber ?? "-"}</td>
                   <td>{record.distributorName}</td>
                   <td>{formatLongDate(record.issueDate)}</td>
-                  <td>{record.gdriveFileName}</td>
+                  <td>
+                    <span className={`badge ${record.paymentTermType === "TERMIN" ? "text-bg-info" : "text-bg-secondary"}`}>
+                      {record.paymentTermType === "TERMIN" ? "Termin" : "Lump Sum"}
+                    </span>
+                  </td>
+                  <td>
+                    {record._count.purchaseOrderLinks > 0 ? (
+                      <span className="badge text-bg-primary">{record._count.purchaseOrderLinks}</span>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td>{record.gdriveFileName ?? "Google Drive"}</td>
                   <td>{formatDateTime(record.updatedAt)}</td>
                   <td>
                     <Link

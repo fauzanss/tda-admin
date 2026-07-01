@@ -35,6 +35,9 @@ export default async function PoKeluarListPage() {
   const documents = await prisma.purchaseOrder.findMany({
     where: { ...notDeleted },
     orderBy: { createdAt: "desc" },
+    include: {
+      _count: { select: { poMasukLinks: true } },
+    },
   });
 
   return (
@@ -56,6 +59,8 @@ export default async function PoKeluarListPage() {
                 <th>No</th>
                 <th>Company Name</th>
                 <th>Date</th>
+                <th>Payment</th>
+                <th>Linked</th>
                 <th>Last Updated</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -64,7 +69,7 @@ export default async function PoKeluarListPage() {
             <tbody>
               {documents.length === 0 && (
                 <tr>
-                  <td colSpan={6}>No data available.</td>
+                  <td colSpan={8}>No data available.</td>
                 </tr>
               )}
               {documents.map((doc) => (
@@ -72,6 +77,18 @@ export default async function PoKeluarListPage() {
                   <td>{doc.documentNumber ?? "-"}</td>
                   <td>{doc.orderToName ?? "-"}</td>
                   <td>{formatLongDate(doc.issueDate)}</td>
+                  <td>
+                    <span className={`badge ${doc.paymentTermType === "TERMIN" ? "text-bg-info" : "text-bg-secondary"}`}>
+                      {doc.paymentTermType === "TERMIN" ? "Termin" : "Lump Sum"}
+                    </span>
+                  </td>
+                  <td>
+                    {doc._count.poMasukLinks > 0 ? (
+                      <span className="badge text-bg-primary">{doc._count.poMasukLinks}</span>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
                   <td>{formatDateTime(doc.updatedAt)}</td>
                   <td>
                     <span className={`badge ${doc.status === "FINAL" ? "text-bg-success" : "text-bg-secondary"}`}>

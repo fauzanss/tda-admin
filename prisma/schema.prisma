@@ -29,6 +29,11 @@ enum DocumentLocale {
   ID
 }
 
+enum PaymentTermType {
+  LUMP_SUM
+  TERMIN
+}
+
 enum UserRole {
   ADMIN
   STAFF
@@ -180,6 +185,7 @@ model PurchaseOrder {
   duplicatedFromNumber String?
   issueDate          DateTime
   taxId              String?
+  paymentTermType    PaymentTermType @default(LUMP_SUM)
   paymentTerms       String?        @db.Text
   deliveryNotes      String?        @db.Text
   orderToName        String?
@@ -187,9 +193,14 @@ model PurchaseOrder {
   deliveredToName    String?
   deliveredToAddress String?        @db.Text
   withSignature      Boolean        @default(true)
+  gdriveFileId       String?
+  gdriveFileName     String?
+  gdriveWebViewLink  String?
   createdById        String
   createdBy          User           @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
   items              PurchaseOrderItem[]
+  installments       PoPaymentInstallment[]
+  poMasukLinks       PoMasukPurchaseOrderLink[]
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   deletedAt          DateTime?
@@ -292,15 +303,53 @@ model PoMasuk {
   poNumber           String?
   issueDate          DateTime?
   distributorName    String
+  paymentTermType    PaymentTermType @default(LUMP_SUM)
+  paymentTerms       String?   @db.Text
+  totalAmount        Decimal?  @db.Decimal(15, 2)
   notes              String?   @db.Text
   gdriveFileId       String
-  gdriveFileName     String
+  gdriveFileName     String?
   gdriveMimeType     String?
   gdriveWebViewLink  String?
   createdById        String
   createdBy          User      @relation("PoMasukCreatedBy", fields: [createdById], references: [id])
+  installments       PoPaymentInstallment[]
+  purchaseOrderLinks PoMasukPurchaseOrderLink[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?
   @@index([deletedAt])
+}
+
+model PoMasukPurchaseOrderLink {
+  id              String        @id @default(cuid())
+  poMasukId       String
+  purchaseOrderId String
+  poMasuk         PoMasuk       @relation(fields: [poMasukId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@unique([poMasukId, purchaseOrderId])
+  @@index([purchaseOrderId])
+}
+
+model PoPaymentInstallment {
+  id              String         @id @default(cuid())
+  poMasukId       String?
+  purchaseOrderId String?
+  sortOrder       Int            @default(0)
+  label           String?
+  percentage      Decimal        @db.Decimal(5, 2)
+  amount          Decimal?       @db.Decimal(15, 2)
+  dueDate         DateTime
+  paidAt          DateTime?
+  notes           String?        @db.Text
+  poMasuk         PoMasuk?       @relation(fields: [poMasukId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([poMasukId])
+  @@index([purchaseOrderId])
+  @@index([dueDate, paidAt])
 }

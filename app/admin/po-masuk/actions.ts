@@ -1,14 +1,19 @@
 "use server";
 
+import { PaymentTermType } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { parseGdriveLinkFormFields } from "@/lib/google-drive";
 import {
-  isAllowedPoMasukMimeType,
-  PO_MASUK_MAX_FILE_SIZE_BYTES,
-  uploadPoMasukFile,
-} from "@/lib/google-drive";
+  computeInstallmentAmounts,
+  parseInstallmentsJson,
+  parseLinkedIdsJson,
+  replacePoMasukInstallments,
+  replacePoMasukLinks,
+  validateInstallmentPercentages,
+} from "@/lib/po-payment";
 import { prisma } from "@/lib/prisma";
 import { requireFileEditor } from "@/lib/roles";
 import { notDeleted } from "@/lib/soft-delete";
@@ -18,6 +23,9 @@ const metadataSchema = z.object({
   issueDate: z.string().optional(),
   distributorName: z.string().min(1),
   notes: z.string().optional(),
+  paymentTermType: z.enum(["LUMP_SUM", "TERMIN"]),
+  paymentTerms: z.string().optional(),
+  totalAmount: z.string().optional(),
 });
 
 function toNullable(value: string | undefined) {
@@ -32,29 +40,49 @@ function parseMetadata(formData: FormData) {
     issueDate: String(formData.get("issueDate") ?? ""),
     distributorName: String(formData.get("distributorName") ?? ""),
     notes: String(formData.get("notes") ?? ""),
+    paymentTermType: String(formData.get("paymentTermType") ?? "LUMP_SUM"),
+    paymentTerms: String(formData.get("paymentTerms") ?? ""),
+    totalAmount: String(formData.get("totalAmount") ?? ""),
   });
 }
 
-function parseUploadFile(formData: FormData) {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("File is required.");
+function parsePaymentExtras(formData: FormData, paymentTermType: PaymentTermType, totalAmount: number | null) {
+  const linkedPurchaseOrderIds = parseLinkedIdsJson(
+    String(formData.get("linkedPurchaseOrderIds") ?? "[]"),
+  );
+  let installments = parseInstallmentsJson(String(formData.get("installments") ?? "[]"));
+  if (paymentTermType === "TERMIN") {
+    validateInstallmentPercentages(installments);
+    installments = computeInstallmentAmounts(totalAmount, installments);
+  } else {
+    installments = [];
   }
-  if (file.size > PO_MASUK_MAX_FILE_SIZE_BYTES) {
-    throw new Error("File exceeds the 10 MB size limit.");
-  }
-  if (!isAllowedPoMasukMimeType(file.type)) {
-    throw new Error("File type is not allowed. Use PDF, JPEG, PNG, or WebP.");
-  }
-  return file;
+  return { linkedPurchaseOrderIds, installments };
+}
+
+async function persistPoMasukExtras(
+  poMasukId: string,
+  paymentTermType: PaymentTermType,
+  installments: ReturnType<typeof parsePaymentExtras>["installments"],
+  linkedPurchaseOrderIds: string[],
+) {
+  await replacePoMasukInstallments(poMasukId, paymentTermType, installments);
+  await replacePoMasukLinks(poMasukId, linkedPurchaseOrderIds);
 }
 
 export async function createPoMasuk(formData: FormData) {
   const userId = await requireFileEditor();
   const metadata = parseMetadata(formData);
-  const file = parseUploadFile(formData);
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const uploaded = await uploadPoMasukFile(buffer, file.name, file.type);
+  const totalAmount = metadata.totalAmount ? Number(metadata.totalAmount) : null;
+  const { linkedPurchaseOrderIds, installments } = parsePaymentExtras(
+    formData,
+    metadata.paymentTermType,
+    totalAmount,
+  );
+  const gdrive = parseGdriveLinkFormFields(formData, { required: true });
+  if (!gdrive) {
+    throw new Error("Google Drive link is required.");
+  }
 
   const record = await prisma.poMasuk.create({
     data: {
@@ -62,15 +90,25 @@ export async function createPoMasuk(formData: FormData) {
       issueDate: metadata.issueDate ? new Date(metadata.issueDate) : null,
       distributorName: metadata.distributorName.trim(),
       notes: toNullable(metadata.notes),
-      gdriveFileId: uploaded.fileId,
-      gdriveFileName: uploaded.fileName,
-      gdriveMimeType: uploaded.mimeType,
-      gdriveWebViewLink: uploaded.webViewLink,
+      paymentTermType: metadata.paymentTermType,
+      paymentTerms: toNullable(metadata.paymentTerms),
+      totalAmount,
+      gdriveFileId: gdrive.gdriveFileId,
+      gdriveFileName: gdrive.gdriveFileName,
+      gdriveWebViewLink: gdrive.gdriveWebViewLink,
       createdById: userId,
     },
   });
 
+  await persistPoMasukExtras(
+    record.id,
+    metadata.paymentTermType,
+    installments,
+    linkedPurchaseOrderIds,
+  );
+
   revalidatePath("/admin/po-masuk");
+  revalidatePath("/admin/dashboard");
   redirect(`/admin/po-masuk/${record.id}`);
 }
 
@@ -78,6 +116,13 @@ export async function updatePoMasuk(formData: FormData) {
   await requireFileEditor();
   const id = String(formData.get("id") ?? "");
   const metadata = parseMetadata(formData);
+  const totalAmount = metadata.totalAmount ? Number(metadata.totalAmount) : null;
+  const { linkedPurchaseOrderIds, installments } = parsePaymentExtras(
+    formData,
+    metadata.paymentTermType,
+    totalAmount,
+  );
+  const gdrive = parseGdriveLinkFormFields(formData);
 
   const updated = await prisma.poMasuk.updateMany({
     where: { id, ...notDeleted },
@@ -86,6 +131,16 @@ export async function updatePoMasuk(formData: FormData) {
       issueDate: metadata.issueDate ? new Date(metadata.issueDate) : null,
       distributorName: metadata.distributorName.trim(),
       notes: toNullable(metadata.notes),
+      paymentTermType: metadata.paymentTermType,
+      paymentTerms: toNullable(metadata.paymentTerms),
+      totalAmount,
+      ...(gdrive
+        ? {
+            gdriveFileId: gdrive.gdriveFileId,
+            gdriveFileName: gdrive.gdriveFileName,
+            gdriveWebViewLink: gdrive.gdriveWebViewLink,
+          }
+        : {}),
     },
   });
 
@@ -93,8 +148,11 @@ export async function updatePoMasuk(formData: FormData) {
     throw new Error("PO Masuk not found.");
   }
 
+  await persistPoMasukExtras(id, metadata.paymentTermType, installments, linkedPurchaseOrderIds);
+
   revalidatePath("/admin/po-masuk");
   revalidatePath(`/admin/po-masuk/${id}`);
+  revalidatePath("/admin/dashboard");
   redirect(`/admin/po-masuk/${id}`);
 }
 
@@ -105,4 +163,5 @@ export async function deletePoMasuk(id: string) {
     data: { deletedAt: new Date() },
   });
   revalidatePath("/admin/po-masuk");
+  revalidatePath("/admin/dashboard");
 }

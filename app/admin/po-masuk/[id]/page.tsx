@@ -1,11 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import {
+  GdriveFilePreviewPanel,
+  InstallmentsPanel,
+  LinkedOutgoingPoPanel,
+} from "@/app/admin/po/PoPanels";
 import { updatePoMasuk } from "@/app/admin/po-masuk/actions";
 import { DeletePoMasukButton } from "@/app/admin/po-masuk/DeletePoMasukButton";
 import { PoMasukForm } from "@/app/admin/po-masuk/PoMasukForm";
 import { authOptions } from "@/lib/auth";
-import { getPoMasukFileViewUrl } from "@/lib/google-drive";
+import {
+  listOutgoingPoOptions,
+  toInstallmentRows,
+} from "@/lib/po-payment";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -28,16 +36,35 @@ export default async function PoMasukDetailPage({
   const { id } = await params;
   const session = await getServerSession(authOptions);
   const canWrite = canWriteFiles(session?.user?.role as string | undefined);
-  const record = await prisma.poMasuk.findFirst({
-    where: { id, ...notDeleted },
-  });
+  const [record, outgoingPoOptions] = await Promise.all([
+    prisma.poMasuk.findFirst({
+      where: { id, ...notDeleted },
+      include: {
+        installments: { orderBy: { sortOrder: "asc" } },
+        purchaseOrderLinks: {
+          include: {
+            purchaseOrder: {
+              select: { id: true, documentNumber: true, orderToName: true },
+            },
+          },
+        },
+      },
+    }),
+    listOutgoingPoOptions(),
+  ]);
 
   if (!record) {
     notFound();
   }
 
-  const viewUrl = record.gdriveWebViewLink ?? getPoMasukFileViewUrl(record.gdriveFileId);
-  const embedUrl = getPoMasukFileViewUrl(record.gdriveFileId);
+  const viewUrl = record.gdriveWebViewLink ?? `https://drive.google.com/file/d/${record.gdriveFileId}/view`;
+  const fileLabel = record.gdriveFileName ?? "Google Drive File";
+  const installmentRows = toInstallmentRows(record.installments);
+  const linkedOutgoing = record.purchaseOrderLinks.map((link) => link.purchaseOrder);
+  const outgoingOptions = outgoingPoOptions.map((po) => ({
+    id: po.id,
+    label: `${po.documentNumber ?? "(Draft)"} — ${po.orderToName ?? "-"}`,
+  }));
 
   return (
     <main>
@@ -60,10 +87,28 @@ export default async function PoMasukDetailPage({
             <dd className="col-sm-9">{record.poNumber ?? "-"}</dd>
             <dt className="col-sm-3">Issue Date</dt>
             <dd className="col-sm-9">{formatLongDate(record.issueDate)}</dd>
+            <dt className="col-sm-3">Payment Type</dt>
+            <dd className="col-sm-9">
+              <span className={`badge ${record.paymentTermType === "TERMIN" ? "text-bg-info" : "text-bg-secondary"}`}>
+                {record.paymentTermType === "TERMIN" ? "Termin" : "Lump Sum"}
+              </span>
+            </dd>
+            {record.totalAmount != null && (
+              <>
+                <dt className="col-sm-3">Total Amount</dt>
+                <dd className="col-sm-9">{Number(record.totalAmount).toLocaleString("id-ID")}</dd>
+              </>
+            )}
+            {record.paymentTermType === "LUMP_SUM" && record.paymentTerms && (
+              <>
+                <dt className="col-sm-3">Payment Terms</dt>
+                <dd className="col-sm-9">{record.paymentTerms}</dd>
+              </>
+            )}
             <dt className="col-sm-3">File</dt>
             <dd className="col-sm-9">
               <a href={viewUrl} target="_blank" rel="noopener noreferrer">
-                {record.gdriveFileName}
+                {fileLabel}
               </a>
             </dd>
             <dt className="col-sm-3">Notes</dt>
@@ -72,27 +117,14 @@ export default async function PoMasukDetailPage({
         </div>
       </div>
 
-      <div className="card mb-3">
-        <div className="card-header d-flex align-items-center justify-content-between">
-          <span>File Preview</span>
-          <a
-            href={viewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-outline-primary btn-sm"
-          >
-            Buka di Google Drive
-          </a>
-        </div>
-        <div className="card-body p-0">
-          <iframe
-            src={embedUrl}
-            title={record.gdriveFileName}
-            className="w-100 border-0"
-            style={{ minHeight: "70vh" }}
-          />
-        </div>
-      </div>
+      <LinkedOutgoingPoPanel links={linkedOutgoing} />
+      <InstallmentsPanel installments={installmentRows} canWrite={canWrite} />
+
+      <GdriveFilePreviewPanel
+        fileId={record.gdriveFileId}
+        fileName={record.gdriveFileName}
+        webViewLink={record.gdriveWebViewLink}
+      />
 
       {canWrite && (
         <>
@@ -100,12 +132,26 @@ export default async function PoMasukDetailPage({
           <PoMasukForm
             action={updatePoMasuk}
             submitLabel="Save Changes"
+            outgoingPoOptions={outgoingOptions}
             initial={{
               id: record.id,
               poNumber: record.poNumber,
               issueDate: record.issueDate,
               distributorName: record.distributorName,
               notes: record.notes,
+              paymentTermType: record.paymentTermType,
+              paymentTerms: record.paymentTerms,
+              totalAmount: record.totalAmount ? Number(record.totalAmount) : null,
+              installments: installmentRows.map((row) => ({
+                label: row.label ?? undefined,
+                percentage: row.percentage,
+                amount: row.amount ?? undefined,
+                dueDate: row.dueDate.toISOString().slice(0, 10),
+                notes: row.notes ?? undefined,
+              })),
+              linkedPurchaseOrderIds: linkedOutgoing.map((po) => po.id),
+              gdriveWebViewLink: record.gdriveWebViewLink,
+              gdriveFileName: record.gdriveFileName,
             }}
           />
         </>

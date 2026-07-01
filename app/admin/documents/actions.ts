@@ -1,12 +1,28 @@
 "use server";
 
-import { DocumentLocale, DocumentStatus, DocumentType, Prisma } from "@/generated/prisma/client";
+import {
+  DocumentLocale,
+  DocumentStatus,
+  DocumentType,
+  PaymentTermType,
+  Prisma,
+} from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { requireFileEditor } from "@/lib/roles";
 import { generateDocumentNumber } from "@/lib/documents";
+import { parseGdriveLinkFormFields } from "@/lib/google-drive";
+import {
+  computeInstallmentAmounts,
+  parseInstallmentsJson,
+  parseLinkedIdsJson,
+  replacePurchaseOrderInstallments,
+  replacePurchaseOrderLinks,
+  sumLineItemsTotal,
+  validateInstallmentPercentages,
+} from "@/lib/po-payment";
 import {
   getDocumentEditPath,
   getDocumentListPath,
@@ -147,6 +163,57 @@ function buildDocumentInput(formData: FormData) {
 
 type DocumentInput = ReturnType<typeof buildDocumentInput>;
 
+function parsePurchaseOrderPaymentExtras(
+  formData: FormData,
+  lineTotal: number,
+) {
+  const paymentTermType = z
+    .enum(["LUMP_SUM", "TERMIN"])
+    .parse(String(formData.get("paymentTermType") ?? "LUMP_SUM")) as PaymentTermType;
+  const linkedPoMasukIds = parseLinkedIdsJson(String(formData.get("linkedPoMasukIds") ?? "[]"));
+  let installments = parseInstallmentsJson(String(formData.get("installments") ?? "[]"));
+  if (paymentTermType === "TERMIN") {
+    validateInstallmentPercentages(installments);
+    installments = computeInstallmentAmounts(lineTotal, installments);
+  } else {
+    installments = [];
+  }
+  return { paymentTermType, linkedPoMasukIds, installments };
+}
+
+async function applyPurchaseOrderGdrive(purchaseOrderId: string, formData: FormData) {
+  const gdrive = parseGdriveLinkFormFields(formData);
+  if (!gdrive) {
+    return;
+  }
+  await prisma.purchaseOrder.update({
+    where: { id: purchaseOrderId },
+    data: {
+      gdriveFileId: gdrive.gdriveFileId,
+      gdriveFileName: gdrive.gdriveFileName,
+      gdriveWebViewLink: gdrive.gdriveWebViewLink,
+    },
+  });
+}
+
+async function persistPurchaseOrderPaymentExtras(
+  purchaseOrderId: string,
+  formData: FormData,
+  lineTotal: number,
+) {
+  const extras = parsePurchaseOrderPaymentExtras(formData, lineTotal);
+  await prisma.purchaseOrder.update({
+    where: { id: purchaseOrderId },
+    data: { paymentTermType: extras.paymentTermType },
+  });
+  await replacePurchaseOrderInstallments(
+    purchaseOrderId,
+    extras.paymentTermType,
+    extras.installments,
+  );
+  await replacePurchaseOrderLinks(purchaseOrderId, extras.linkedPoMasukIds);
+}
+
 async function createByType(input: DocumentInput, userId: string) {
   if (input.type === "INVOICE") {
     return prisma.invoice.create({
@@ -249,7 +316,14 @@ export async function createDocument(formData: FormData) {
 
   const document = await createByType(input, userId);
 
+  if (input.type === "PURCHASE_ORDER") {
+    const lineTotal = sumLineItemsTotal(input.lines);
+    await persistPurchaseOrderPaymentExtras(document.id, formData, lineTotal);
+    await applyPurchaseOrderGdrive(document.id, formData);
+  }
+
   revalidatePath(getDocumentListPath(input.type));
+  revalidatePath("/admin/dashboard");
   redirect(getDocumentEditPath(input.type, document.id));
 }
 
@@ -305,6 +379,9 @@ export async function updateDocument(documentId: string, formData: FormData) {
         items: { deleteMany: {}, create: input.lines },
       },
     });
+    const lineTotal = sumLineItemsTotal(input.lines);
+    await persistPurchaseOrderPaymentExtras(documentId, formData, lineTotal);
+    await applyPurchaseOrderGdrive(documentId, formData);
   } else if (input.type === "SURAT_JALAN") {
     const current = await prisma.suratJalan.findFirst({ where: { id: documentId, ...notDeleted } });
     if (!current) {
@@ -357,6 +434,9 @@ export async function updateDocument(documentId: string, formData: FormData) {
 
   revalidatePath(getDocumentListPath(input.type));
   revalidatePath(getDocumentPreviewPath(input.type, documentId));
+  if (input.type === "PURCHASE_ORDER") {
+    revalidatePath("/admin/dashboard");
+  }
   redirect(`${getDocumentEditPath(input.type, documentId)}?updated=1`);
 }
 
@@ -463,7 +543,10 @@ export async function duplicateDocument(type: DocumentType, id: string) {
   if (type === "PURCHASE_ORDER") {
     const source = await prisma.purchaseOrder.findFirstOrThrow({
       where: { id, ...notDeleted },
-      include: { items: { orderBy: { sortOrder: "asc" } } },
+      include: {
+        items: { orderBy: { sortOrder: "asc" } },
+        installments: { orderBy: { sortOrder: "asc" } },
+      },
     });
     const created = await prisma.purchaseOrder.create({
       data: {
@@ -473,6 +556,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
         duplicatedFromNumber: source.documentNumber ?? "(Draft)",
         issueDate: source.issueDate,
         taxId: source.taxId,
+        paymentTermType: source.paymentTermType,
         paymentTerms: source.paymentTerms,
         deliveryNotes: source.deliveryNotes,
         orderToName: source.orderToName,
@@ -480,6 +564,9 @@ export async function duplicateDocument(type: DocumentType, id: string) {
         deliveredToName: source.deliveredToName,
         deliveredToAddress: source.deliveredToAddress,
         withSignature: source.withSignature,
+        gdriveFileId: source.gdriveFileId,
+        gdriveFileName: source.gdriveFileName,
+        gdriveWebViewLink: source.gdriveWebViewLink,
         createdById: userId,
         items: {
           create: source.items.map((item) => ({
@@ -495,6 +582,17 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       },
       select: { id: true },
     });
+    await replacePurchaseOrderInstallments(
+      created.id,
+      source.paymentTermType,
+      source.installments.map((row) => ({
+        label: row.label ?? undefined,
+        percentage: Number(row.percentage),
+        amount: row.amount != null ? Number(row.amount) : undefined,
+        dueDate: row.dueDate.toISOString().slice(0, 10),
+        notes: row.notes ?? undefined,
+      })),
+    );
     revalidatePath(getDocumentListPath(type));
     redirect(getDocumentEditPath(type, created.id));
   }

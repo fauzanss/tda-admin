@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { listIncomingPoOptions } from "@/lib/po-payment";
 import { notDeleted } from "@/lib/soft-delete";
 
 export async function getPoKeluarFormData() {
-  const [companies, purchaseOrdersRaw, suratJalans] = await Promise.all([
+  const [companies, purchaseOrdersRaw, suratJalans, incomingPoRaw] = await Promise.all([
     prisma.company.findMany({
       where: { isActive: true, ...notDeleted },
       orderBy: { companyName: "asc" },
@@ -44,6 +45,7 @@ export async function getPoKeluarFormData() {
         documentNumber: true,
       },
     }),
+    listIncomingPoOptions(),
   ]);
 
   const purchaseOrders = purchaseOrdersRaw.map((po) => ({
@@ -55,5 +57,10 @@ export async function getPoKeluarFormData() {
     })),
   }));
 
-  return { companies, purchaseOrders, suratJalans };
+  const incomingPoOptions = incomingPoRaw.map((po) => ({
+    id: po.id,
+    label: `${po.poNumber ?? "-"} — ${po.distributorName}`,
+  }));
+
+  return { companies, purchaseOrders, suratJalans, incomingPoOptions };
 }

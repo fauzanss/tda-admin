@@ -1,7 +1,12 @@
 "use client";
 
-import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType, PaymentTermType } from "@/generated/prisma/client";
 import { useState } from "react";
+
+import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
+import { GoogleDriveLinkFields } from "@/app/admin/po/GoogleDriveLinkFields";
+import { PoLinkOption, PoLinkSelector } from "@/app/admin/po/PoLinkSelector";
+import type { InstallmentInput } from "@/lib/po-payment";
 
 type FormLine = {
   description: string;
@@ -64,6 +69,11 @@ type DocumentWithLines = {
   salesPerson: string | null;
   taxId: string | null;
   paymentTerms: string | null;
+  paymentTermType?: PaymentTermType;
+  installments?: InstallmentInput[];
+  linkedPoMasukIds?: string[];
+  gdriveWebViewLink?: string | null;
+  gdriveFileName?: string | null;
   deliveryNotes: string | null;
   billToName: string | null;
   billToAddress: string | null;
@@ -128,6 +138,7 @@ export function DocumentForm({
   companies,
   purchaseOrders,
   suratJalans,
+  incomingPoOptions = [],
   defaultValue,
   duplicateInfo,
   onSubmit,
@@ -137,6 +148,7 @@ export function DocumentForm({
   companies: CompanyOption[];
   purchaseOrders?: PurchaseOrderOption[];
   suratJalans?: SuratJalanOption[];
+  incomingPoOptions?: PoLinkOption[];
   defaultValue?: DocumentWithLines;
   duplicateInfo?: string | null;
   onSubmit: (formData: FormData) => void;
@@ -542,8 +554,31 @@ export function DocumentForm({
             />
           </>
         )}
-        {(isInvoice || isPo) && (
+        {(isInvoice) && (
           <TextArea name="paymentTerms" label="Payment Terms" defaultValue={defaultValue?.paymentTerms ?? ""} />
+        )}
+        {isPo && (
+          <>
+            <PaymentTermSection
+              initial={{
+                paymentTermType: defaultValue?.paymentTermType ?? "LUMP_SUM",
+                paymentTerms: defaultValue?.paymentTerms,
+                installments: defaultValue?.installments,
+              }}
+            />
+            <PoLinkSelector
+              name="linkedPoMasukIds"
+              label="Link to Incoming PO"
+              options={incomingPoOptions}
+              initialSelectedIds={defaultValue?.linkedPoMasukIds ?? []}
+            />
+            <div className="col-12">
+              <GoogleDriveLinkFields
+                initialLink={defaultValue?.gdriveWebViewLink}
+                initialFileName={defaultValue?.gdriveFileName}
+              />
+            </div>
+          </>
         )}
         {isSuratJalan && (
           <TextArea name="deliveryNotes" label="Delivery Instructions / Notes" defaultValue={defaultValue?.deliveryNotes ?? ""} />
