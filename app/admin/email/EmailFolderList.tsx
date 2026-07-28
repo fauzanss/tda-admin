@@ -23,21 +23,8 @@ import {
   listMailMessages,
   listMailboxes,
 } from "@/lib/hostinger-mail";
+import { formatAppMailDateTime } from "@/lib/datetime";
 import { cn } from "@/lib/cn";
-
-function formatMailDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value || "-";
-  }
-  return date.toLocaleString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function formatParty(name: string, address: string) {
   if (!name && !address) return "(Unknown)";
@@ -256,7 +243,7 @@ export async function EmailFolderList({
                       {message.subject || "(No subject)"}
                     </Link>
                   </TableCell>
-                  <TableCell>{formatMailDate(message.date)}</TableCell>
+                  <TableCell>{formatAppMailDateTime(message.date)}</TableCell>
                 </TableRow>
               );
             })}

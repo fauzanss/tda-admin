@@ -14,20 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyAmount } from "@/lib/documents";
+import { formatAppDate } from "@/lib/datetime";
 import { getUpcomingInstallments } from "@/lib/po-payment";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { authOptions } from "@/lib/auth";
 import { canWriteFiles } from "@/lib/role-guards";
 import { getServerSession } from "next-auth";
-
-function formatDueDate(date: Date) {
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -112,7 +105,7 @@ export default async function DashboardPage() {
                 <TableCell>
                   {row.amount != null ? formatCurrencyAmount(row.amount) : "-"}
                 </TableCell>
-                <TableCell>{formatDueDate(row.dueDate)}</TableCell>
+                <TableCell>{formatAppDate(row.dueDate)}</TableCell>
                 {canWrite && (
                   <TableCell>
                     <MarkInstallmentPaidButton id={row.id} />

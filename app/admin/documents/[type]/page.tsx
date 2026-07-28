@@ -27,24 +27,7 @@ import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
-
-function formatLongDate(date: Date) {
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
+import { formatAppDateTime, formatAppLongDate } from "@/lib/datetime";
 
 function getCompanyName(
   type: "INVOICE" | "SURAT_JALAN" | "SPH",
@@ -118,8 +101,8 @@ export default async function DocumentListPage({
               <TableRow key={doc.id}>
                 <TableCell>{doc.documentNumber ?? "-"}</TableCell>
                 <TableCell>{getCompanyName(type, doc)}</TableCell>
-                <TableCell>{formatLongDate(doc.issueDate)}</TableCell>
-                <TableCell>{formatDateTime(doc.updatedAt)}</TableCell>
+                <TableCell>{formatAppLongDate(doc.issueDate)}</TableCell>
+                <TableCell>{formatAppDateTime(doc.updatedAt)}</TableCell>
                 <TableCell>
                   <Badge variant={doc.status === "FINAL" ? "success" : "muted"}>
                     {doc.status}

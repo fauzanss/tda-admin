@@ -13,17 +13,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyAmount } from "@/lib/documents";
+import { formatAppDate } from "@/lib/datetime";
 import { getGoogleDrivePreviewUrl } from "@/lib/google-drive";
 import { cn } from "@/lib/cn";
 import type { InstallmentRow } from "@/lib/po-payment";
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function InstallmentsPanel({
   installments,
@@ -61,7 +54,7 @@ export function InstallmentsPanel({
                 <TableCell>
                   {row.amount != null ? formatCurrencyAmount(row.amount) : "-"}
                 </TableCell>
-                <TableCell>{formatDate(row.dueDate)}</TableCell>
+                <TableCell>{formatAppDate(row.dueDate)}</TableCell>
                 <TableCell>
                   <Badge variant={row.paidAt ? "success" : "warning"}>
                     {row.paidAt ? "Paid" : "Pending"}

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { authOptions } from "@/lib/auth";
+import { formatAppLongDate } from "@/lib/datetime";
 import {
   listOutgoingPoOptions,
   toInstallmentRows,
@@ -22,15 +23,6 @@ import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
-
-function formatLongDate(date: Date | null) {
-  if (!date) return "-";
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export default async function PoMasukDetailPage({
   params,
@@ -95,7 +87,7 @@ export default async function PoMasukDetailPage({
             <dt className="text-sm font-medium text-tda-navy-muted">PO Number</dt>
             <dd className="text-sm text-slate-700">{record.poNumber ?? "-"}</dd>
             <dt className="text-sm font-medium text-tda-navy-muted">Issue Date</dt>
-            <dd className="text-sm text-slate-700">{formatLongDate(record.issueDate)}</dd>
+            <dd className="text-sm text-slate-700">{formatAppLongDate(record.issueDate)}</dd>
             <dt className="text-sm font-medium text-tda-navy-muted">Payment Type</dt>
             <dd className="text-sm text-slate-700">
               <Badge

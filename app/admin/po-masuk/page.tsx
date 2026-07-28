@@ -17,29 +17,11 @@ import {
 } from "@/components/ui/table";
 import { authOptions } from "@/lib/auth";
 import { cn } from "@/lib/cn";
+import { formatAppDateTime, formatAppLongDate } from "@/lib/datetime";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
-
-function formatLongDate(date: Date | null) {
-  if (!date) return "-";
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
 
 export default async function PoMasukListPage() {
   const session = await getServerSession(authOptions);
@@ -90,7 +72,7 @@ export default async function PoMasukListPage() {
                 <TableRow key={record.id}>
                   <TableCell>{record.poNumber ?? "-"}</TableCell>
                   <TableCell>{record.distributorName}</TableCell>
-                  <TableCell>{formatLongDate(record.issueDate)}</TableCell>
+                  <TableCell>{formatAppLongDate(record.issueDate)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
@@ -108,7 +90,7 @@ export default async function PoMasukListPage() {
                     )}
                   </TableCell>
                   <TableCell>{record.gdriveFileName ?? "Google Drive"}</TableCell>
-                  <TableCell>{formatDateTime(record.updatedAt)}</TableCell>
+                  <TableCell>{formatAppDateTime(record.updatedAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Link

@@ -9,21 +9,8 @@ import {
   getMailMessageDetail,
   isMailApiConfigured,
 } from "@/lib/hostinger-mail";
+import { formatAppMailDateTime } from "@/lib/datetime";
 import { cn } from "@/lib/cn";
-
-function formatMailDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value || "-";
-  }
-  return date.toLocaleString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function formatAddressList(items: Array<{ name: string; address: string }>) {
   if (items.length === 0) return "-";
@@ -158,7 +145,7 @@ export default async function EmailMessagePage({
               </>
             )}
             <dt className="text-sm font-medium text-tda-navy-muted">Date</dt>
-            <dd className="text-sm text-slate-800">{formatMailDate(detail.date)}</dd>
+            <dd className="text-sm text-slate-800">{formatAppMailDateTime(detail.date)}</dd>
           </dl>
         </CardBody>
       </Card>

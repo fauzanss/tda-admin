@@ -20,6 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/cn";
+import { formatAppDateTime } from "@/lib/datetime";
 
 type Company = {
   id: string;
@@ -38,17 +40,6 @@ type CompanyForm = {
   website: string;
   isActive: boolean;
 };
-
-function formatDateTime(value: string | Date) {
-  const date = new Date(value);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
 
 const defaultForm: CompanyForm = {
   companyName: "",
@@ -174,7 +165,7 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
                     {company.isActive ? "Yes" : "No"}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatDateTime(company.updatedAt)}</TableCell>
+                <TableCell>{formatAppDateTime(company.updatedAt)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Button

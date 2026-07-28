@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { authOptions } from "@/lib/auth";
 import { cn } from "@/lib/cn";
+import { formatAppDateTime, formatAppLongDate } from "@/lib/datetime";
 import { getDocumentEditPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
@@ -25,24 +26,6 @@ import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
 
 const PO_KELUAR_TYPE = "PURCHASE_ORDER" as const;
-
-function formatLongDate(date: Date) {
-  return date.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
 
 export default async function PoKeluarListPage() {
   const session = await getServerSession(authOptions);
@@ -93,7 +76,7 @@ export default async function PoKeluarListPage() {
                 <TableRow key={doc.id}>
                   <TableCell>{doc.documentNumber ?? "-"}</TableCell>
                   <TableCell>{doc.orderToName ?? "-"}</TableCell>
-                  <TableCell>{formatLongDate(doc.issueDate)}</TableCell>
+                  <TableCell>{formatAppLongDate(doc.issueDate)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={doc.paymentTermType === "TERMIN" ? "orange" : "muted"}
@@ -108,7 +91,7 @@ export default async function PoKeluarListPage() {
                       "-"
                     )}
                   </TableCell>
-                  <TableCell>{formatDateTime(doc.updatedAt)}</TableCell>
+                  <TableCell>{formatAppDateTime(doc.updatedAt)}</TableCell>
                   <TableCell>
                     <Badge variant={doc.status === "FINAL" ? "success" : "muted"}>
                       {doc.status}
