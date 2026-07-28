@@ -13,7 +13,7 @@
     "prisma:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.11.2",
+    "@auth/prisma-adapter": "^2.11.3",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@tailwindcss/postcss": "^4",
@@ -30,7 +30,7 @@
     "lucide-react": "^1.27.0",
     "mariadb": "^3.4.5",
     "next": "16.2.9",
-    "next-auth": "^4.24.14",
+    "next-auth": "^4.24.15",
     "otplib": "^13.4.1",
     "prisma": "^7.8.0",
     "qrcode": "^1.5.4",
@@ -46,5 +46,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tsx": "^4.21.0"
+  },
+  "overrides": {
+    "@auth/core": "0.41.3"
   }
 }
