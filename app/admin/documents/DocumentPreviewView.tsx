@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Suspense } from "react";
 
 import { PrintButton } from "@/app/admin/documents/PrintButton";
 import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
@@ -196,7 +197,9 @@ export async function DocumentPreviewView({
 
   return (
     <main className="doc-preview-page relative bg-slate-200 p-4">
-      <PrintButton />
+      <Suspense fallback={null}>
+        <PrintButton />
+      </Suspense>
       <article
         className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
         data-doc-locale={locale}

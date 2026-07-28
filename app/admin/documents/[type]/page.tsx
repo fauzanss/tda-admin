@@ -126,6 +126,15 @@ export default async function DocumentListPage({
                   >
                     <i className="bi bi-eye" />
                   </Link>
+                  <Link
+                    href={`${getDocumentPreviewPath(type, doc.id)}?print=1`}
+                    className="btn btn-link p-0 me-3 text-decoration-none"
+                    title="Print"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <i className="bi bi-printer" />
+                  </Link>
                   {canWrite && <DuplicateDocumentButton type={type} id={doc.id} />}
                   {canWrite && <DeleteDocumentButton type={type} id={doc.id} />}
                 </td>
