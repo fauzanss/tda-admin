@@ -70,3 +70,54 @@ export function formatAppMailDateTime(value: string | Date | null | undefined) {
     minute: "2-digit",
   });
 }
+
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function isAppYmd(value: string | null | undefined): value is string {
+  return Boolean(value && YMD_RE.test(value));
+}
+
+/** Current calendar date in Asia/Jakarta as YYYY-MM-DD */
+export function getAppYmd(date: Date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/** Shift a YYYY-MM-DD calendar date by N months (Jakarta calendar math). */
+export function shiftAppYmdMonths(ymd: string, months: number) {
+  if (!isAppYmd(ymd)) {
+    throw new Error("Invalid date format. Expected YYYY-MM-DD.");
+  }
+  const [year, month, day] = ymd.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1 + months, day));
+  const y = utc.getUTCFullYear();
+  const m = String(utc.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(utc.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Inclusive start of Jakarta day as absolute Date */
+export function appYmdStart(ymd: string) {
+  if (!isAppYmd(ymd)) {
+    throw new Error("Invalid date format. Expected YYYY-MM-DD.");
+  }
+  return new Date(`${ymd}T00:00:00+07:00`);
+}
+
+/** Inclusive end of Jakarta day as absolute Date */
+export function appYmdEnd(ymd: string) {
+  if (!isAppYmd(ymd)) {
+    throw new Error("Invalid date format. Expected YYYY-MM-DD.");
+  }
+  return new Date(`${ymd}T23:59:59.999+07:00`);
+}
+
+export function getDefaultSphRangeYmd() {
+  const to = getAppYmd();
+  const from = shiftAppYmdMonths(to, -3);
+  return { from, to };
+}
