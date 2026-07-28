@@ -7,6 +7,7 @@ import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
 import { GoogleDriveLinkFields } from "@/app/admin/po/GoogleDriveLinkFields";
 import { PoLinkOption, PoLinkSelector } from "@/app/admin/po/PoLinkSelector";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { CompanySelect } from "@/components/admin/CompanySelect";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -423,20 +424,14 @@ export function DocumentForm({
                 <Label htmlFor="bill-to-company-select">
                   {isPo ? "Select Order To Company" : "Select Bill To Company"}
                 </Label>
-                <Select
+                <CompanySelect
                   id="bill-to-company-select"
+                  companies={companies}
                   defaultValue={getCompanyIdByName(defaultValue?.billToName)}
-                  onChange={(event) =>
-                    applyCompanyToFields(event.target.value, "billToName", "billToAddress")
+                  onChange={(companyId) =>
+                    applyCompanyToFields(companyId, "billToName", "billToAddress")
                   }
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName}
-                    </option>
-                  ))}
-                </Select>
+                />
               </div>
               <Field
                 name="billToName"
@@ -451,24 +446,18 @@ export function DocumentForm({
               <Field name="deliveredToName" label="Delivered To" defaultValue={defaultValue?.deliveredToName ?? ""} />
               <div>
                 <Label htmlFor="delivered-to-company-select">Select Delivered To Company</Label>
-                <Select
+                <CompanySelect
                   id="delivered-to-company-select"
+                  companies={companies}
                   defaultValue={getCompanyIdByName(defaultValue?.deliveredToName)}
-                  onChange={(event) =>
+                  onChange={(companyId) =>
                     applyCompanyToFields(
-                      event.target.value,
+                      companyId,
                       "deliveredToName",
                       "deliveredToAddress",
                     )
                   }
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName}
-                    </option>
-                  ))}
-                </Select>
+                />
               </div>
               <FormTextArea name="deliveredToAddress" label="Delivered To Address" defaultValue={defaultValue?.deliveredToAddress ?? ""} />
             </div>
@@ -501,39 +490,27 @@ export function DocumentForm({
               </div>
               <div>
                 <Label htmlFor="from-company-select">Select From Company</Label>
-                <Select
+                <CompanySelect
                   id="from-company-select"
+                  companies={companies}
                   defaultValue={getCompanyIdByName(defaultValue?.fromName)}
-                  onChange={(event) =>
-                    applyCompanyToFields(event.target.value, "fromName", "fromAddress")
+                  onChange={(companyId) =>
+                    applyCompanyToFields(companyId, "fromName", "fromAddress")
                   }
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName}
-                    </option>
-                  ))}
-                </Select>
+                />
               </div>
               <Field name="fromName" label="Sent From" defaultValue={defaultValue?.fromName ?? ""} />
               <FormTextArea name="fromAddress" label="From Address" defaultValue={defaultValue?.fromAddress ?? ""} />
               <div>
                 <Label htmlFor="to-company-select">Select To Company</Label>
-                <Select
+                <CompanySelect
                   id="to-company-select"
+                  companies={companies}
                   defaultValue={getCompanyIdByName(defaultValue?.toName)}
-                  onChange={(event) =>
-                    applyCompanyToFields(event.target.value, "toName", "toAddress")
+                  onChange={(companyId) =>
+                    applyCompanyToFields(companyId, "toName", "toAddress")
                   }
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName}
-                    </option>
-                  ))}
-                </Select>
+                />
               </div>
               <Field name="toName" label="Sent To" defaultValue={defaultValue?.toName ?? ""} />
               <FormTextArea name="toAddress" label="To Address" defaultValue={defaultValue?.toAddress ?? ""} />
@@ -544,20 +521,14 @@ export function DocumentForm({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="sph-company-select">Select Company</Label>
-                <Select
+                <CompanySelect
                   id="sph-company-select"
+                  companies={companies}
                   defaultValue={getCompanyIdByName(defaultValue?.deliveredToName)}
-                  onChange={(event) =>
-                    applyCompanyToFields(event.target.value, "deliveredToName")
+                  onChange={(companyId) =>
+                    applyCompanyToFields(companyId, "deliveredToName")
                   }
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName}
-                    </option>
-                  ))}
-                </Select>
+                />
               </div>
               <Field name="billToName" label="Recipient (Name)" defaultValue={defaultValue?.billToName ?? ""} />
               <Field name="deliveredToName" label="Company" defaultValue={defaultValue?.deliveredToName ?? ""} />
