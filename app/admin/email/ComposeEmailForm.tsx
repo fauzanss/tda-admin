@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { sendEmailAction, type SendEmailState } from "@/app/admin/email/actions";
 import { SubmitButton } from "@/components/admin/SubmitButton";
@@ -13,6 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import type { MailboxOption } from "@/lib/hostinger-mail";
 
 const initialState: SendEmailState = {};
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function ComposeEmailForm({
   mailboxes,
@@ -28,6 +34,7 @@ export function ComposeEmailForm({
   defaultDisplayName: string;
 }>) {
   const [state, formAction] = useActionState(sendEmailAction, initialState);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   return (
     <form action={formAction}>
@@ -92,8 +99,25 @@ export function ComposeEmailForm({
 
           <div>
             <Label htmlFor="attachments">Attachments</Label>
-            <Input id="attachments" name="attachments" type="file" multiple />
+            <Input
+              id="attachments"
+              name="attachments"
+              type="file"
+              multiple
+              onChange={(event) => {
+                setSelectedFiles(Array.from(event.target.files ?? []));
+              }}
+            />
             <p className="mt-1.5 text-xs text-tda-navy-muted">Max 5 files, 10 MB each.</p>
+            {selectedFiles.length > 0 && (
+              <ul className="mt-2 space-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                {selectedFiles.map((file) => (
+                  <li key={`${file.name}-${file.size}-${file.lastModified}`}>
+                    {file.name} ({formatFileSize(file.size)})
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {state.error && <Alert variant="danger">{state.error}</Alert>}

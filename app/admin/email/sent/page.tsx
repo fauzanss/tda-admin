@@ -1,6 +1,6 @@
-import { EmailFolderList } from "./EmailFolderList";
+import { EmailFolderList } from "../EmailFolderList";
 
-export default async function EmailInboxPage({
+export default async function EmailSentPage({
   searchParams,
 }: Readonly<{
   searchParams?: Promise<{
@@ -11,5 +11,5 @@ export default async function EmailInboxPage({
   }>;
 }>) {
   const resolved = (await searchParams) ?? {};
-  return <EmailFolderList mode="inbox" searchParams={resolved} />;
+  return <EmailFolderList mode="sent" searchParams={resolved} />;
 }

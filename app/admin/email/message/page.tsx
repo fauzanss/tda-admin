@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Reply } from "lucide-react";
+import { Download, Paperclip, Reply } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Alert } from "@/components/ui/alert";
@@ -35,6 +35,13 @@ function formatAddressList(items: Array<{ name: string; address: string }>) {
     .join(", ");
 }
 
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default async function EmailMessagePage({
   searchParams,
 }: Readonly<{
@@ -42,12 +49,18 @@ export default async function EmailMessagePage({
     mailbox?: string;
     folder?: string;
     uid?: string;
+    from?: string;
   }>;
 }>) {
   const resolved = (await searchParams) ?? {};
   const mailbox = resolved.mailbox?.trim() ?? "";
   const folder = resolved.folder?.trim() ?? "INBOX";
   const uid = Number(resolved.uid ?? "");
+  const fromList = resolved.from === "sent" ? "sent" : "inbox";
+  const listHref = fromList === "sent"
+    ? `/admin/email/sent?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}`
+    : `/admin/email?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}`;
+  const listLabel = fromList === "sent" ? "Back to Sent" : "Back to Inbox";
 
   if (!isMailApiConfigured()) {
     return (
@@ -68,10 +81,10 @@ export default async function EmailMessagePage({
           Invalid message reference.
         </Alert>
         <Link
-          href="/admin/email"
+          href={fromList === "sent" ? "/admin/email/sent" : "/admin/email"}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
         >
-          Back to Inbox
+          {listLabel}
         </Link>
       </main>
     );
@@ -88,10 +101,10 @@ export default async function EmailMessagePage({
           {error instanceof Error ? error.message : "Failed to load message."}
         </Alert>
         <Link
-          href={`/admin/email?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}`}
+          href={listHref}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
         >
-          Back to Inbox
+          {listLabel}
         </Link>
       </main>
     );
@@ -102,7 +115,6 @@ export default async function EmailMessagePage({
     ? detail.subject
     : `Re: ${detail.subject || "(No subject)"}`;
   const composeHref = `/admin/email/compose?mailbox=${encodeURIComponent(mailbox)}&to=${encodeURIComponent(replyTo)}&subject=${encodeURIComponent(replySubject)}`;
-  const inboxHref = `/admin/email?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}`;
 
   return (
     <main>
@@ -111,15 +123,17 @@ export default async function EmailMessagePage({
         actions={
           <>
             <Link
-              href={inboxHref}
+              href={listHref}
               className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             >
-              Back to Inbox
+              {listLabel}
             </Link>
-            <Link href={composeHref} className={cn(buttonVariants({ size: "sm" }))}>
-              <Reply size={14} aria-hidden />
-              Reply
-            </Link>
+            {fromList !== "sent" && (
+              <Link href={composeHref} className={cn(buttonVariants({ size: "sm" }))}>
+                <Reply size={14} aria-hidden />
+                Reply
+              </Link>
+            )}
           </>
         }
       />
@@ -148,6 +162,60 @@ export default async function EmailMessagePage({
           </dl>
         </CardBody>
       </Card>
+
+      {detail.attachments.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Paperclip size={16} aria-hidden />
+              Attachments ({detail.attachments.length})
+            </CardTitle>
+          </CardHeader>
+          <CardBody>
+            <ul className="space-y-2">
+              {detail.attachments.map((file) => {
+                const base = `/api/mail/attachment?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}&uid=${uid}&attachmentId=${encodeURIComponent(file.id)}`;
+                const openHref = base;
+                const downloadHref = `${base}&download=1`;
+                const sizeLabel = formatFileSize(file.sizeBytes);
+                return (
+                  <li
+                    key={file.id}
+                    className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 px-3 py-2"
+                  >
+                    <Paperclip size={14} className="shrink-0 text-tda-navy-muted" aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-800">
+                        {file.filename}
+                      </p>
+                      <p className="text-xs text-tda-navy-muted">
+                        {[file.contentType, sizeLabel, file.inline ? "inline" : null]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                    <a
+                      href={openHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                    >
+                      Open
+                    </a>
+                    <a
+                      href={downloadHref}
+                      className={cn(buttonVariants({ size: "sm" }))}
+                    >
+                      <Download size={14} aria-hidden />
+                      Download
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

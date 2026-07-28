@@ -12,6 +12,7 @@ import {
   LogOut,
   Mail,
   Package,
+  Send,
   Settings,
   Truck,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const poLinks = [
 
 const emailLinks = [
   { href: "/admin/email", label: "Inbox", icon: Inbox },
+  { href: "/admin/email/sent", label: "Sent", icon: Send },
   { href: "/admin/email/compose", label: "Compose", icon: Mail },
 ];
 
@@ -157,19 +159,18 @@ export function AdminShell({
                 ))}
               </NavSection>
               <NavSection title="Email">
-                {emailLinks.map((link) => (
-                  <NavLink
-                    key={link.href}
-                    {...link}
-                    active={
-                      link.href === "/admin/email"
-                        ? pathname === "/admin/email" ||
-                          pathname.startsWith("/admin/email/message")
-                        : pathname === link.href ||
-                          pathname.startsWith(`${link.href}/`)
-                    }
-                  />
-                ))}
+                {emailLinks.map((link) => {
+                  const isInbox = link.href === "/admin/email";
+                  const isSent = link.href === "/admin/email/sent";
+                  const active = isInbox
+                    ? pathname === "/admin/email"
+                    : isSent
+                      ? pathname === "/admin/email/sent" ||
+                        pathname.startsWith("/admin/email/sent/")
+                      : pathname === link.href ||
+                        pathname.startsWith(`${link.href}/`);
+                  return <NavLink key={link.href} {...link} active={active} />;
+                })}
               </NavSection>
               {showSettings ? (
                 <NavSection title="Settings">

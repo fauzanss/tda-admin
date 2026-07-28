@@ -125,5 +125,6 @@ export async function sendEmailAction(
   }
 
   revalidatePath("/admin/email");
-  redirect("/admin/email?sent=1");
+  revalidatePath("/admin/email/sent");
+  redirect("/admin/email/sent?sent=1");
 }
