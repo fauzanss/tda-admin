@@ -19,6 +19,11 @@ const poLinks = [
   { href: "/admin/po-keluar", label: "Outgoing PO" },
 ];
 
+const emailLinks = [
+  { href: "/admin/email", label: "Inbox" },
+  { href: "/admin/email/compose", label: "Compose" },
+];
+
 const settingsLinks = [
   { href: "/admin/settings/user", label: "User" },
   { href: "/admin/settings/company", label: "Company" },
@@ -97,6 +102,24 @@ export function AdminShell({
                   pathname === link.href || pathname.startsWith(`${link.href}/`)
                     ? "active"
                     : ""
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="list-group-item fw-semibold bg-light">- Email -</div>
+            {emailLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`list-group-item list-group-item-action ps-4 ${
+                  link.href === "/admin/email"
+                    ? pathname === "/admin/email" || pathname.startsWith("/admin/email/message")
+                      ? "active"
+                      : ""
+                    : pathname === link.href || pathname.startsWith(`${link.href}/`)
+                      ? "active"
+                      : ""
                 }`}
               >
                 {link.label}

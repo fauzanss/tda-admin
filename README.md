@@ -58,3 +58,13 @@ Setup steps:
 2. Create a dedicated Drive folder for PO Masuk files.
 3. Share that folder with the service account email (Editor access).
 4. Copy the folder ID from the Drive URL into `GOOGLE_DRIVE_PO_MASUK_FOLDER_ID`.
+
+## Hostinger Mail (Inbox + Compose)
+
+Set this environment variable (Agentic Mail API token from hPanel):
+
+```
+MAIL_API_TOKEN=your-hostinger-mail-api-token
+```
+
+Create the token under Hostinger hPanel → Agentic Mail → API. The admin Email menu uses it to list mailboxes, read messages, and send mail.
