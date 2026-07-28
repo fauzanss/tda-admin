@@ -3,6 +3,13 @@
 import { useActionState } from "react";
 
 import { sendEmailAction, type SendEmailState } from "@/app/admin/email/actions";
+import { SubmitButton } from "@/components/admin/SubmitButton";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardBody } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type { MailboxOption } from "@/lib/hostinger-mail";
 
 const initialState: SendEmailState = {};
@@ -20,109 +27,80 @@ export function ComposeEmailForm({
   defaultSubject?: string;
   defaultDisplayName: string;
 }>) {
-  const [state, formAction, pending] = useActionState(sendEmailAction, initialState);
+  const [state, formAction] = useActionState(sendEmailAction, initialState);
 
   return (
-    <form action={formAction} className="card">
-      <div className="card-body">
-        <input type="hidden" name="displayName" value={defaultDisplayName} />
+    <form action={formAction}>
+      <Card>
+        <CardBody className="space-y-4">
+          <input type="hidden" name="displayName" value={defaultDisplayName} />
 
-        <div className="mb-3">
-          <label className="form-label" htmlFor="mailboxResourceId">
-            From
-          </label>
-          <select
-            id="mailboxResourceId"
-            name="mailboxResourceId"
-            className="form-select"
-            defaultValue={defaultMailbox ?? mailboxes[0]?.resourceId}
-            required
-          >
-            {mailboxes.map((mailbox) => (
-              <option key={mailbox.resourceId} value={mailbox.resourceId}>
-                {mailbox.address}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label" htmlFor="to">
-            To
-          </label>
-          <input
-            id="to"
-            name="to"
-            type="text"
-            className="form-control"
-            placeholder="name@example.com, other@example.com"
-            defaultValue={defaultTo ?? ""}
-            required
-          />
-        </div>
-
-        <div className="row g-3">
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="cc">
-              Cc
-            </label>
-            <input id="cc" name="cc" type="text" className="form-control" />
+          <div>
+            <Label htmlFor="mailboxResourceId">From</Label>
+            <Select
+              id="mailboxResourceId"
+              name="mailboxResourceId"
+              defaultValue={defaultMailbox ?? mailboxes[0]?.resourceId}
+              required
+            >
+              {mailboxes.map((mailbox) => (
+                <option key={mailbox.resourceId} value={mailbox.resourceId}>
+                  {mailbox.address}
+                </option>
+              ))}
+            </Select>
           </div>
-          <div className="col-md-6">
-            <label className="form-label" htmlFor="bcc">
-              Bcc
-            </label>
-            <input id="bcc" name="bcc" type="text" className="form-control" />
+
+          <div>
+            <Label htmlFor="to">To</Label>
+            <Input
+              id="to"
+              name="to"
+              type="text"
+              placeholder="name@example.com, other@example.com"
+              defaultValue={defaultTo ?? ""}
+              required
+            />
           </div>
-        </div>
 
-        <div className="mb-3 mt-3">
-          <label className="form-label" htmlFor="subject">
-            Subject
-          </label>
-          <input
-            id="subject"
-            name="subject"
-            type="text"
-            className="form-control"
-            defaultValue={defaultSubject ?? ""}
-            required
-          />
-        </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="cc">Cc</Label>
+              <Input id="cc" name="cc" type="text" />
+            </div>
+            <div>
+              <Label htmlFor="bcc">Bcc</Label>
+              <Input id="bcc" name="bcc" type="text" />
+            </div>
+          </div>
 
-        <div className="mb-3">
-          <label className="form-label" htmlFor="body">
-            Body
-          </label>
-          <textarea
-            id="body"
-            name="body"
-            className="form-control"
-            rows={12}
-            required
-          />
-        </div>
+          <div>
+            <Label htmlFor="subject">Subject</Label>
+            <Input
+              id="subject"
+              name="subject"
+              type="text"
+              defaultValue={defaultSubject ?? ""}
+              required
+            />
+          </div>
 
-        <div className="mb-3">
-          <label className="form-label" htmlFor="attachments">
-            Attachments
-          </label>
-          <input
-            id="attachments"
-            name="attachments"
-            type="file"
-            className="form-control"
-            multiple
-          />
-          <div className="form-text">Max 5 files, 10 MB each.</div>
-        </div>
+          <div>
+            <Label htmlFor="body">Body</Label>
+            <Textarea id="body" name="body" rows={12} required />
+          </div>
 
-        {state.error && <div className="alert alert-danger">{state.error}</div>}
+          <div>
+            <Label htmlFor="attachments">Attachments</Label>
+            <Input id="attachments" name="attachments" type="file" multiple />
+            <p className="mt-1.5 text-xs text-tda-navy-muted">Max 5 files, 10 MB each.</p>
+          </div>
 
-        <button type="submit" className="btn btn-primary" disabled={pending}>
-          {pending ? "Sending..." : "Send Email"}
-        </button>
-      </div>
+          {state.error && <Alert variant="danger">{state.error}</Alert>}
+
+          <SubmitButton pendingLabel="Sending...">Send Email</SubmitButton>
+        </CardBody>
+      </Card>
     </form>
   );
 }

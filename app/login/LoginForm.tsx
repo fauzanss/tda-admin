@@ -4,6 +4,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { checkLoginPassword } from "@/app/login/actions";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 
 export function LoginForm() {
   const router = useRouter();
@@ -41,35 +47,44 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card shadow-sm">
-      <div className="card-body p-4">
-        <div className="mb-3">
-          <label className="form-label">Email</label>
-          <input
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            type="email"
-            required
-            className="form-control"
-            autoComplete="username"
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Password</label>
-          <input
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
-            required
-            className="form-control"
-            autoComplete="current-password"
-          />
-        </div>
-        {error && <div className="alert alert-danger py-2">{error}</div>}
-        <button type="submit" disabled={loading} className="btn btn-primary w-100">
-          {loading ? "Processing..." : "Continue"}
-        </button>
-      </div>
+    <form onSubmit={onSubmit}>
+      <Card>
+        <CardBody className="space-y-4 p-6">
+          <div>
+            <Label htmlFor="loginEmail">Email</Label>
+            <Input
+              id="loginEmail"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              type="email"
+              required
+              autoComplete="username"
+            />
+          </div>
+          <div>
+            <Label htmlFor="loginPassword">Password</Label>
+            <Input
+              id="loginPassword"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              type="password"
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          {error && <Alert variant="danger">{error}</Alert>}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? (
+              <>
+                <Spinner size={16} className="text-current" />
+                Processing...
+              </>
+            ) : (
+              "Continue"
+            )}
+          </Button>
+        </CardBody>
+      </Card>
     </form>
   );
 }

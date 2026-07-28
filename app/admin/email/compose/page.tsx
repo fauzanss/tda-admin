@@ -1,8 +1,12 @@
 import Link from "next/link";
 
 import { ComposeEmailForm } from "@/app/admin/email/ComposeEmailForm";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Alert } from "@/components/ui/alert";
+import { buttonVariants } from "@/components/ui/button";
 import { authOptions } from "@/lib/auth";
 import { isMailApiConfigured, listMailboxes } from "@/lib/hostinger-mail";
+import { cn } from "@/lib/cn";
 import { prisma } from "@/lib/prisma";
 import { canWriteFiles } from "@/lib/role-guards";
 import { getServerSession } from "next-auth";
@@ -27,10 +31,10 @@ export default async function ComposeEmailPage({
   if (!isMailApiConfigured()) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Compose</h1>
-        <div className="alert alert-warning">
+        <PageHeader title="Compose" />
+        <Alert variant="warning">
           Mail API is not configured. Set <code>MAIL_API_TOKEN</code> in the environment.
-        </div>
+        </Alert>
       </main>
     );
   }
@@ -41,10 +45,10 @@ export default async function ComposeEmailPage({
   } catch (error) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Compose</h1>
-        <div className="alert alert-danger">
+        <PageHeader title="Compose" />
+        <Alert variant="danger">
           {error instanceof Error ? error.message : "Failed to load mailboxes."}
-        </div>
+        </Alert>
       </main>
     );
   }
@@ -52,10 +56,8 @@ export default async function ComposeEmailPage({
   if (mailboxes.length === 0) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Compose</h1>
-        <div className="alert alert-info">
-          No mailboxes are available for this API token.
-        </div>
+        <PageHeader title="Compose" />
+        <Alert variant="info">No mailboxes are available for this API token.</Alert>
       </main>
     );
   }
@@ -70,12 +72,17 @@ export default async function ComposeEmailPage({
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">Compose</h1>
-        <Link href="/admin/email" className="btn btn-outline-secondary btn-sm">
-          Back to Inbox
-        </Link>
-      </div>
+      <PageHeader
+        title="Compose"
+        actions={
+          <Link
+            href="/admin/email"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            Back to Inbox
+          </Link>
+        }
+      />
       <ComposeEmailForm
         mailboxes={mailboxes}
         defaultMailbox={defaultMailbox}

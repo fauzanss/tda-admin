@@ -3,6 +3,7 @@ import { DocumentType } from "@/generated/prisma/client";
 import { createDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { getPoKeluarFormData } from "@/app/admin/po-keluar/form-data";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { authOptions } from "@/lib/auth";
 import { canWriteFiles } from "@/lib/role-guards";
 import { getServerSession } from "next-auth";
@@ -25,7 +26,7 @@ export default async function NewPoKeluarPage() {
 
   return (
     <main>
-      <h1 className="h3 fw-semibold mb-3">New PO Keluar</h1>
+      <PageHeader title="New PO Keluar" />
       <DocumentForm
         type={PO_KELUAR_TYPE}
         companies={companies}

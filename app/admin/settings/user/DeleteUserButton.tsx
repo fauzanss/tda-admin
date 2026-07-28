@@ -3,6 +3,9 @@
 import { useState } from "react";
 
 import { deleteUser } from "@/app/admin/settings/user/actions";
+import { useToast } from "@/components/admin/ToastProvider";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type Props = {
   userId: string;
@@ -10,11 +13,15 @@ type Props = {
 };
 
 export function DeleteUserButton({ userId, email }: Props) {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
   return (
-    <button
+    <Button
       type="button"
-      className="btn btn-sm btn-outline-danger"
+      variant="outline"
+      size="sm"
+      className="border-red-200 text-red-700 hover:bg-red-50"
       disabled={loading}
       onClick={async () => {
         if (
@@ -28,15 +35,25 @@ export function DeleteUserButton({ userId, email }: Props) {
         try {
           await deleteUser(userId);
         } catch (e) {
-          globalThis.alert(
-            e instanceof Error ? e.message : "Operation failed. You may not remove your own account.",
+          toast(
+            e instanceof Error
+              ? e.message
+              : "Operation failed. You may not remove your own account.",
+            "danger",
           );
         } finally {
           setLoading(false);
         }
       }}
     >
-      {loading ? "…" : "Delete"}
-    </button>
+      {loading ? (
+        <>
+          <Spinner size={14} className="text-current" />
+          Deleting...
+        </>
+      ) : (
+        "Delete"
+      )}
+    </Button>
   );
 }

@@ -449,8 +449,8 @@ export async function DocumentPreviewView({
             {type === "SURAT_JALAN" ? (
               withSignature ? (
               <div style={{ width: "100%" }}>
-                <div className="row g-4">
-                  <div className="col-6">
+                <div className="signature-dual">
+                  <div className="signature-dual-col">
                     <div style={{ fontWeight: 600 }}>{t.sender}</div>
                     <div className="signature-box" />
                     <div>
@@ -463,7 +463,7 @@ export async function DocumentPreviewView({
                       <span style={{ display: "inline-block", width: 72 }}>{t.date}</span>: {formatLongDate(document.issueDate, locale)}
                     </div>
                   </div>
-                  <div className="col-6">
+                  <div className="signature-dual-col">
                     <div style={{ fontWeight: 600 }}>{t.receiver}</div>
                     <div className="signature-box" />
                     <div>

@@ -1,7 +1,22 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
 
 import { DeletePoMasukButton } from "@/app/admin/po-masuk/DeletePoMasukButton";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { authOptions } from "@/lib/auth";
+import { cn } from "@/lib/cn";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -39,71 +54,82 @@ export default async function PoMasukListPage() {
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">PO Masuk</h1>
-        {canWrite && (
-          <Link href="/admin/po-masuk/new" className="btn btn-primary">
-            + New PO Masuk
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="PO Masuk"
+        actions={
+          canWrite ? (
+            <Link
+              href="/admin/po-masuk/new"
+              className={buttonVariants({ variant: "default" })}
+            >
+              + New PO Masuk
+            </Link>
+          ) : undefined
+        }
+      />
 
-      <div className="card">
-        <div className="table-responsive">
-          <table className="table table-striped mb-0">
-            <thead>
-              <tr>
-                <th>No PO</th>
-                <th>Distributor</th>
-                <th>Date</th>
-                <th>Payment</th>
-                <th>Linked</th>
-                <th>File</th>
-                <th>Last Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.length === 0 && (
-                <tr>
-                  <td colSpan={8}>No data available.</td>
-                </tr>
-              )}
+      <Card>
+        {records.length === 0 ? (
+          <EmptyState title="No data available." />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>No PO</TableHead>
+                <TableHead>Distributor</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Linked</TableHead>
+                <TableHead>File</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {records.map((record) => (
-                <tr key={record.id}>
-                  <td>{record.poNumber ?? "-"}</td>
-                  <td>{record.distributorName}</td>
-                  <td>{formatLongDate(record.issueDate)}</td>
-                  <td>
-                    <span className={`badge ${record.paymentTermType === "TERMIN" ? "text-bg-info" : "text-bg-secondary"}`}>
+                <TableRow key={record.id}>
+                  <TableCell>{record.poNumber ?? "-"}</TableCell>
+                  <TableCell>{record.distributorName}</TableCell>
+                  <TableCell>{formatLongDate(record.issueDate)}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        record.paymentTermType === "TERMIN" ? "orange" : "muted"
+                      }
+                    >
                       {record.paymentTermType === "TERMIN" ? "Termin" : "Lump Sum"}
-                    </span>
-                  </td>
-                  <td>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {record._count.purchaseOrderLinks > 0 ? (
-                      <span className="badge text-bg-primary">{record._count.purchaseOrderLinks}</span>
+                      <Badge>{record._count.purchaseOrderLinks}</Badge>
                     ) : (
                       "-"
                     )}
-                  </td>
-                  <td>{record.gdriveFileName ?? "Google Drive"}</td>
-                  <td>{formatDateTime(record.updatedAt)}</td>
-                  <td>
-                    <Link
-                      href={`/admin/po-masuk/${record.id}`}
-                      className="btn btn-link p-0 me-3 text-decoration-none"
-                      title="View"
-                    >
-                      <i className="bi bi-eye" />
-                    </Link>
-                    {canWrite && <DeletePoMasukButton id={record.id} />}
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{record.gdriveFileName ?? "Google Drive"}</TableCell>
+                  <TableCell>{formatDateTime(record.updatedAt)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Link
+                        href={`/admin/po-masuk/${record.id}`}
+                        title="View"
+                        className={cn(
+                          buttonVariants({ variant: "link", size: "icon" }),
+                          "text-tda-navy",
+                        )}
+                      >
+                        <Eye size={16} />
+                      </Link>
+                      {canWrite && <DeletePoMasukButton id={record.id} />}
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </main>
   );
 }

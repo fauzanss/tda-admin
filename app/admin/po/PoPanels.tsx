@@ -1,8 +1,20 @@
 import Link from "next/link";
 
 import { MarkInstallmentPaidButton } from "@/app/admin/po/MarkInstallmentPaidButton";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrencyAmount } from "@/lib/documents";
 import { getGoogleDrivePreviewUrl } from "@/lib/google-drive";
+import { cn } from "@/lib/cn";
 import type { InstallmentRow } from "@/lib/po-payment";
 
 function formatDate(date: Date) {
@@ -25,40 +37,46 @@ export function InstallmentsPanel({
   }
 
   return (
-    <section className="card mb-3">
-      <div className="card-header fw-semibold">Payment Installments</div>
-      <div className="table-responsive">
-        <table className="table table-sm mb-0">
-          <thead>
-            <tr>
-              <th>Label</th>
-              <th>%</th>
-              <th>Amount</th>
-              <th>Due Date</th>
-              <th>Status</th>
-              {canWrite && <th>Action</th>}
-            </tr>
-          </thead>
-          <tbody>
+    <section className="mb-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Installments</CardTitle>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Label</TableHead>
+              <TableHead>%</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Status</TableHead>
+              {canWrite && <TableHead>Action</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {installments.map((row) => (
-              <tr key={row.id}>
-                <td>{row.label || "-"}</td>
-                <td>{row.percentage}%</td>
-                <td>{row.amount != null ? formatCurrencyAmount(row.amount) : "-"}</td>
-                <td>{formatDate(row.dueDate)}</td>
-                <td>
-                  <span className={`badge ${row.paidAt ? "text-bg-success" : "text-bg-warning"}`}>
+              <TableRow key={row.id}>
+                <TableCell>{row.label || "-"}</TableCell>
+                <TableCell>{row.percentage}%</TableCell>
+                <TableCell>
+                  {row.amount != null ? formatCurrencyAmount(row.amount) : "-"}
+                </TableCell>
+                <TableCell>{formatDate(row.dueDate)}</TableCell>
+                <TableCell>
+                  <Badge variant={row.paidAt ? "success" : "warning"}>
                     {row.paidAt ? "Paid" : "Pending"}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
                 {canWrite && (
-                  <td>{!row.paidAt && <MarkInstallmentPaidButton id={row.id} />}</td>
+                  <TableCell>
+                    {!row.paidAt && <MarkInstallmentPaidButton id={row.id} />}
+                  </TableCell>
                 )}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </section>
   );
 }
@@ -73,23 +91,38 @@ export function LinkedOutgoingPoPanel({
   }
 
   return (
-    <section className="card mb-3">
-      <div className="card-header fw-semibold">Linked Outgoing PO</div>
-      <ul className="list-group list-group-flush">
-        {links.map((po) => (
-          <li key={po.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <span>{po.documentNumber ?? "(Draft)"} — {po.orderToName ?? "-"}</span>
-            <div className="d-flex gap-2">
-              <Link href={`/admin/po-keluar/${po.id}/edit`} className="btn btn-sm btn-outline-secondary">
-                Edit
-              </Link>
-              <Link href={`/admin/po-keluar/${po.id}/preview`} className="btn btn-sm btn-outline-primary">
-                Preview
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <section className="mb-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Linked Outgoing PO</CardTitle>
+        </CardHeader>
+        <ul className="divide-y divide-slate-100">
+          {links.map((po) => (
+            <li
+              key={po.id}
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span className="text-sm text-slate-700">
+                {po.documentNumber ?? "(Draft)"} — {po.orderToName ?? "-"}
+              </span>
+              <div className="flex shrink-0 gap-2">
+                <Link
+                  href={`/admin/po-keluar/${po.id}/edit`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  Edit
+                </Link>
+                <Link
+                  href={`/admin/po-keluar/${po.id}/preview`}
+                  className={buttonVariants({ variant: "default", size: "sm" })}
+                >
+                  Preview
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </section>
   );
 }
@@ -104,18 +137,33 @@ export function LinkedIncomingPoPanel({
   }
 
   return (
-    <section className="card mb-3">
-      <div className="card-header fw-semibold">Linked Incoming PO</div>
-      <ul className="list-group list-group-flush">
-        {links.map((po) => (
-          <li key={po.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <span>{po.poNumber ?? "-"} — {po.distributorName}</span>
-            <Link href={`/admin/po-masuk/${po.id}`} className="btn btn-sm btn-outline-primary">
-              View
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <section className="mb-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Linked Incoming PO</CardTitle>
+        </CardHeader>
+        <ul className="divide-y divide-slate-100">
+          {links.map((po) => (
+            <li
+              key={po.id}
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span className="text-sm text-slate-700">
+                {po.poNumber ?? "-"} — {po.distributorName}
+              </span>
+              <Link
+                href={`/admin/po-masuk/${po.id}`}
+                className={cn(
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  "shrink-0 self-start sm:self-auto",
+                )}
+              >
+                View
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </section>
   );
 }
@@ -134,26 +182,28 @@ export function GdriveFilePreviewPanel({
   const title = fileName ?? "Google Drive File";
 
   return (
-    <section className="card mb-3">
-      <div className="card-header d-flex align-items-center justify-content-between">
-        <span>PO File — {title}</span>
-        <a
-          href={viewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-outline-primary btn-sm"
-        >
-          Buka di Google Drive
-        </a>
-      </div>
-      <div className="card-body p-0">
-        <iframe
-          src={embedUrl}
-          title={title}
-          className="w-100 border-0"
-          style={{ minHeight: "70vh" }}
-        />
-      </div>
+    <section className="mb-4">
+      <Card>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="border-0 p-0">PO File — {title}</CardTitle>
+          <a
+            href={viewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Buka di Google Drive
+          </a>
+        </CardHeader>
+        <CardBody className="p-0">
+          <iframe
+            src={embedUrl}
+            title={title}
+            className="w-full border-0"
+            style={{ minHeight: "70vh" }}
+          />
+        </CardBody>
+      </Card>
     </section>
   );
 }

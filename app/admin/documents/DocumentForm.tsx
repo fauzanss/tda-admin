@@ -6,6 +6,15 @@ import { useState } from "react";
 import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
 import { GoogleDriveLinkFields } from "@/app/admin/po/GoogleDriveLinkFields";
 import { PoLinkOption, PoLinkSelector } from "@/app/admin/po/PoLinkSelector";
+import { SubmitButton } from "@/components/admin/SubmitButton";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/cn";
 import type { InstallmentInput } from "@/lib/po-payment";
 
 type FormLine = {
@@ -278,471 +287,466 @@ export function DocumentForm({
   }
 
   return (
-    <form action={onSubmit} className="card">
-      <div className="card-body">
-      <input type="hidden" name="type" value={type} />
-      <input type="hidden" name="lines" value={JSON.stringify(lines)} />
-      {duplicateInfo && (
-        <div className="alert alert-info py-2 mb-3">
-          Duplicated from document No: {duplicateInfo}
-        </div>
-      )}
+    <form action={onSubmit}>
+      <Card>
+        <CardBody className="space-y-6">
+          <input type="hidden" name="type" value={type} />
+          <input type="hidden" name="lines" value={JSON.stringify(lines)} />
+          {duplicateInfo && (
+            <Alert variant="info">
+              Duplicated from document No: {duplicateInfo}
+            </Alert>
+          )}
 
-      <div className="row g-3 mb-3">
-        <div className="col-12 col-md-6">
-          <label className="form-label">Document Language</label>
-          <select
-            name="locale"
-            className="form-select"
-            defaultValue={defaultValue?.locale ?? "ID"}
-          >
-            <option value="EN">English</option>
-            <option value="ID">Indonesian</option>
-          </select>
-        </div>
-        <div className="col-12 col-md-6">
-          <label className="form-label">Create with Signature</label>
-          <select
-            name="withSignature"
-            className="form-select"
-            defaultValue={defaultValue?.withSignature === false ? "false" : "true"}
-          >
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
-        </div>
-        <Field name="issueDate" label="Document Date" type="date" defaultValue={defaultValue ? defaultValue.issueDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)} required />
-        {isInvoice && (
-          <Field
-            name="dueDate"
-            label="Due Date"
-            type="date"
-            defaultValue={defaultValue?.dueDate ? defaultValue.dueDate.toISOString().slice(0, 10) : ""}
-          />
-        )}
-        {isSph ? (
-          defaultValue?.documentNumber ? (
-            <div className="col-12 col-md-6">
-              <label className="form-label">Document Number</label>
-              <input
-                className="form-control"
-                value={defaultValue.documentNumber}
-                readOnly
-                disabled
-              />
-              <input type="hidden" name="documentNumber" value={defaultValue.documentNumber} />
-            </div>
-          ) : (
-            <div className="col-12 col-md-6">
-              <label className="form-label">Document Number</label>
-              <input
-                className="form-control"
-                value="Auto-generated on save"
-                readOnly
-                disabled
-              />
-            </div>
-          )
-        ) : (
-          <Field
-            name="documentNumber"
-            label="Document Number (optional for draft)"
-            defaultValue={defaultValue?.documentNumber ?? ""}
-          />
-        )}
-        {isInvoice && (
-          <div className="col-12 col-md-6">
-            <label className="form-label">Select PO Reference</label>
-            <select
-              className="form-select"
-              defaultValue={
-                purchaseOrders?.find((item) => item.documentNumber === defaultValue?.referencePoNumber)?.id ??
-                ""
-              }
-              onChange={(event) => applyInvoiceFromPo(event.target.value)}
-            >
-              <option value="">Select PO Reference</option>
-              {(purchaseOrders ?? []).map((po) => (
-                <option key={po.id} value={po.id}>
-                  {po.documentNumber ?? "(Draft PO)"}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        {isInvoice && (
-          <Field name="referencePoNumber" label="PO Reference" defaultValue={defaultValue?.referencePoNumber ?? ""} />
-        )}
-        {isInvoice && (
-          <div className="col-12 col-md-6">
-            <label className="form-label">Select BAST/SJ Reference</label>
-            <select
-              className="form-select"
-              defaultValue={
-                suratJalans?.find(
-                  (item) => item.documentNumber === defaultValue?.referenceBastSjNumber,
-                )?.id ?? ""
-              }
-              onChange={(event) => {
-                const selected = suratJalans?.find((item) => item.id === event.target.value);
-                applyDocumentNumberToField("referenceBastSjNumber", selected?.documentNumber ?? "");
-              }}
-            >
-              <option value="">Select BAST/SJ Reference</option>
-              {(suratJalans ?? []).map((sj) => (
-                <option key={sj.id} value={sj.id}>
-                  {sj.documentNumber ?? "(Draft SJ)"}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        {isInvoice && (
-          <>
-            <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
-            <Field name="customerReference" label="Customer Reference" defaultValue={defaultValue?.customerReference ?? ""} />
-          </>
-        )}
-        {isPo && (
-          <Field name="salesPerson" label="Sales Person" defaultValue={defaultValue?.salesPerson ?? ""} />
-        )}
-        {(isInvoice || isPo) && <Field name="taxId" label="Tax ID" defaultValue={defaultValue?.taxId ?? ""} />}
-      </div>
-
-      {(isInvoice || isPo) && (
-        <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <label className="form-label">
-              {isPo ? "Select Order To Company" : "Select Bill To Company"}
-            </label>
-            <select
-              className="form-select"
-              defaultValue={getCompanyIdByName(defaultValue?.billToName)}
-              onChange={(event) =>
-                applyCompanyToFields(event.target.value, "billToName", "billToAddress")
-              }
-            >
-              <option value="">Select Company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.companyName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Field
-            name="billToName"
-            label={isPo ? "Order To" : "Bill To"}
-            defaultValue={defaultValue?.billToName ?? ""}
-          />
-          <TextArea
-            name="billToAddress"
-            label={isPo ? "Order To Address" : "Bill To Address"}
-            defaultValue={defaultValue?.billToAddress ?? ""}
-          />
-          <Field name="deliveredToName" label="Delivered To" defaultValue={defaultValue?.deliveredToName ?? ""} />
-          <div className="col-12 col-md-6">
-            <label className="form-label">Select Delivered To Company</label>
-            <select
-              className="form-select"
-              defaultValue={getCompanyIdByName(defaultValue?.deliveredToName)}
-              onChange={(event) =>
-                applyCompanyToFields(
-                  event.target.value,
-                  "deliveredToName",
-                  "deliveredToAddress",
-                )
-              }
-            >
-              <option value="">Select Company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.companyName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <TextArea name="deliveredToAddress" label="Delivered To Address" defaultValue={defaultValue?.deliveredToAddress ?? ""} />
-        </div>
-      )}
-
-      {isSuratJalan && (
-        <div className="row g-3 mb-3">
-          <input
-            type="hidden"
-            name="referencePoNumber"
-            defaultValue={defaultValue?.referencePoNumber ?? ""}
-          />
-          <div className="col-12 col-md-6">
-            <label className="form-label">PO Reference</label>
-            <select
-              className="form-select"
-              defaultValue={
-                purchaseOrders?.find((item) => item.documentNumber === defaultValue?.referencePoNumber)?.id ??
-                ""
-              }
-              onChange={(event) => applyPoReference(event.target.value)}
-            >
-              <option value="">Select PO Reference</option>
-              {(purchaseOrders ?? []).map((po) => (
-                <option key={po.id} value={po.id}>
-                  {po.documentNumber ?? "(Draft PO)"}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-12 col-md-6">
-            <label className="form-label">Select From Company</label>
-            <select
-              className="form-select"
-              defaultValue={getCompanyIdByName(defaultValue?.fromName)}
-              onChange={(event) =>
-                applyCompanyToFields(event.target.value, "fromName", "fromAddress")
-              }
-            >
-              <option value="">Select Company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.companyName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Field name="fromName" label="Sent From" defaultValue={defaultValue?.fromName ?? ""} />
-          <TextArea name="fromAddress" label="From Address" defaultValue={defaultValue?.fromAddress ?? ""} />
-          <div className="col-12 col-md-6">
-            <label className="form-label">Select To Company</label>
-            <select
-              className="form-select"
-              defaultValue={getCompanyIdByName(defaultValue?.toName)}
-              onChange={(event) =>
-                applyCompanyToFields(event.target.value, "toName", "toAddress")
-              }
-            >
-              <option value="">Select Company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.companyName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Field name="toName" label="Sent To" defaultValue={defaultValue?.toName ?? ""} />
-          <TextArea name="toAddress" label="To Address" defaultValue={defaultValue?.toAddress ?? ""} />
-        </div>
-      )}
-
-      {isSph && (
-        <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <label className="form-label">Select Company</label>
-            <select
-              className="form-select"
-              defaultValue={getCompanyIdByName(defaultValue?.deliveredToName)}
-              onChange={(event) =>
-                applyCompanyToFields(event.target.value, "deliveredToName")
-              }
-            >
-              <option value="">Select Company</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.companyName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Field name="billToName" label="Recipient (Name)" defaultValue={defaultValue?.billToName ?? ""} />
-          <Field name="deliveredToName" label="Company" defaultValue={defaultValue?.deliveredToName ?? ""} />
-        </div>
-      )}
-
-      <div className="row g-3 mb-3">
-        {isSph && (
-          <>
-            <div className="col-12 col-md-6">
-              <label className="form-label">Offer Kind</label>
-              <select
-                name="offerKind"
-                className="form-select"
-                defaultValue={defaultValue?.offerKind ?? "PROCUREMENT"}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="locale">Document Language</Label>
+              <Select
+                id="locale"
+                name="locale"
+                defaultValue={defaultValue?.locale ?? "ID"}
               >
-                <option value="PROCUREMENT">Pengadaan (Procurement)</option>
-                <option value="SERVICE">Jasa (Service)</option>
-              </select>
+                <option value="EN">English</option>
+                <option value="ID">Indonesian</option>
+              </Select>
             </div>
-            <div className="col-12">
-              <label className="form-label">Subject</label>
-              <input
-                name="subject"
-                className="form-control"
-                defaultValue={defaultValue?.subject ?? ""}
+            <div>
+              <Label htmlFor="withSignature">Create with Signature</Label>
+              <Select
+                id="withSignature"
+                name="withSignature"
+                defaultValue={defaultValue?.withSignature === false ? "false" : "true"}
+              >
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </Select>
+            </div>
+            <Field name="issueDate" label="Document Date" type="date" defaultValue={defaultValue ? defaultValue.issueDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)} required />
+            {isInvoice && (
+              <Field
+                name="dueDate"
+                label="Due Date"
+                type="date"
+                defaultValue={defaultValue?.dueDate ? defaultValue.dueDate.toISOString().slice(0, 10) : ""}
               />
-            </div>
-          </>
-        )}
-      </div>
+            )}
+            {isSph ? (
+              defaultValue?.documentNumber ? (
+                <div>
+                  <Label>Document Number</Label>
+                  <Input
+                    value={defaultValue.documentNumber}
+                    readOnly
+                    disabled
+                  />
+                  <input type="hidden" name="documentNumber" value={defaultValue.documentNumber} />
+                </div>
+              ) : (
+                <div>
+                  <Label>Document Number</Label>
+                  <Input
+                    value="Auto-generated on save"
+                    readOnly
+                    disabled
+                  />
+                </div>
+              )
+            ) : (
+              <Field
+                name="documentNumber"
+                label="Document Number (optional for draft)"
+                defaultValue={defaultValue?.documentNumber ?? ""}
+              />
+            )}
+            {isInvoice && (
+              <div>
+                <Label htmlFor="po-reference-select">Select PO Reference</Label>
+                <Select
+                  id="po-reference-select"
+                  defaultValue={
+                    purchaseOrders?.find((item) => item.documentNumber === defaultValue?.referencePoNumber)?.id ??
+                    ""
+                  }
+                  onChange={(event) => applyInvoiceFromPo(event.target.value)}
+                >
+                  <option value="">Select PO Reference</option>
+                  {(purchaseOrders ?? []).map((po) => (
+                    <option key={po.id} value={po.id}>
+                      {po.documentNumber ?? "(Draft PO)"}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+            {isInvoice && (
+              <Field name="referencePoNumber" label="PO Reference" defaultValue={defaultValue?.referencePoNumber ?? ""} />
+            )}
+            {isInvoice && (
+              <div>
+                <Label htmlFor="bast-sj-reference-select">Select BAST/SJ Reference</Label>
+                <Select
+                  id="bast-sj-reference-select"
+                  defaultValue={
+                    suratJalans?.find(
+                      (item) => item.documentNumber === defaultValue?.referenceBastSjNumber,
+                    )?.id ?? ""
+                  }
+                  onChange={(event) => {
+                    const selected = suratJalans?.find((item) => item.id === event.target.value);
+                    applyDocumentNumberToField("referenceBastSjNumber", selected?.documentNumber ?? "");
+                  }}
+                >
+                  <option value="">Select BAST/SJ Reference</option>
+                  {(suratJalans ?? []).map((sj) => (
+                    <option key={sj.id} value={sj.id}>
+                      {sj.documentNumber ?? "(Draft SJ)"}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
+            {isInvoice && (
+              <>
+                <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
+                <Field name="customerReference" label="Customer Reference" defaultValue={defaultValue?.customerReference ?? ""} />
+              </>
+            )}
+            {isPo && (
+              <Field name="salesPerson" label="Sales Person" defaultValue={defaultValue?.salesPerson ?? ""} />
+            )}
+            {(isInvoice || isPo) && <Field name="taxId" label="Tax ID" defaultValue={defaultValue?.taxId ?? ""} />}
+          </div>
 
-      {isSph && (
-        <div className="row g-3 mb-3">
-          <TextArea
-            name="paymentTerms"
-            label="Payment Terms"
-            defaultValue={defaultValue?.paymentTerms ?? ""}
-          />
-          <TextArea
-            name="notesText"
-            label="Offer Notes (1 line = 1 point)"
-            defaultValue={sphNotes.offerNotes}
-          />
-        </div>
-      )}
+          {(isInvoice || isPo) && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="bill-to-company-select">
+                  {isPo ? "Select Order To Company" : "Select Bill To Company"}
+                </Label>
+                <Select
+                  id="bill-to-company-select"
+                  defaultValue={getCompanyIdByName(defaultValue?.billToName)}
+                  onChange={(event) =>
+                    applyCompanyToFields(event.target.value, "billToName", "billToAddress")
+                  }
+                >
+                  <option value="">Select Company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Field
+                name="billToName"
+                label={isPo ? "Order To" : "Bill To"}
+                defaultValue={defaultValue?.billToName ?? ""}
+              />
+              <FormTextArea
+                name="billToAddress"
+                label={isPo ? "Order To Address" : "Bill To Address"}
+                defaultValue={defaultValue?.billToAddress ?? ""}
+              />
+              <Field name="deliveredToName" label="Delivered To" defaultValue={defaultValue?.deliveredToName ?? ""} />
+              <div>
+                <Label htmlFor="delivered-to-company-select">Select Delivered To Company</Label>
+                <Select
+                  id="delivered-to-company-select"
+                  defaultValue={getCompanyIdByName(defaultValue?.deliveredToName)}
+                  onChange={(event) =>
+                    applyCompanyToFields(
+                      event.target.value,
+                      "deliveredToName",
+                      "deliveredToAddress",
+                    )
+                  }
+                >
+                  <option value="">Select Company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <FormTextArea name="deliveredToAddress" label="Delivered To Address" defaultValue={defaultValue?.deliveredToAddress ?? ""} />
+            </div>
+          )}
 
-      <div className="row g-3 mb-3">
-        {(isInvoice) && (
-          <TextArea name="paymentTerms" label="Payment Terms" defaultValue={defaultValue?.paymentTerms ?? ""} />
-        )}
-        {isPo && (
-          <>
-            <PaymentTermSection
-              initial={{
-                paymentTermType: defaultValue?.paymentTermType ?? "LUMP_SUM",
-                paymentTerms: defaultValue?.paymentTerms,
-                installments: defaultValue?.installments,
-              }}
-            />
-            <PoLinkSelector
-              name="linkedPoMasukIds"
-              label="Link to Incoming PO"
-              options={incomingPoOptions}
-              initialSelectedIds={defaultValue?.linkedPoMasukIds ?? []}
-            />
-            <div className="col-12">
-              <GoogleDriveLinkFields
-                initialLink={defaultValue?.gdriveWebViewLink}
-                initialFileName={defaultValue?.gdriveFileName}
+          {isSuratJalan && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <input
+                type="hidden"
+                name="referencePoNumber"
+                defaultValue={defaultValue?.referencePoNumber ?? ""}
               />
+              <div>
+                <Label htmlFor="sj-po-reference-select">PO Reference</Label>
+                <Select
+                  id="sj-po-reference-select"
+                  defaultValue={
+                    purchaseOrders?.find((item) => item.documentNumber === defaultValue?.referencePoNumber)?.id ??
+                    ""
+                  }
+                  onChange={(event) => applyPoReference(event.target.value)}
+                >
+                  <option value="">Select PO Reference</option>
+                  {(purchaseOrders ?? []).map((po) => (
+                    <option key={po.id} value={po.id}>
+                      {po.documentNumber ?? "(Draft PO)"}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="from-company-select">Select From Company</Label>
+                <Select
+                  id="from-company-select"
+                  defaultValue={getCompanyIdByName(defaultValue?.fromName)}
+                  onChange={(event) =>
+                    applyCompanyToFields(event.target.value, "fromName", "fromAddress")
+                  }
+                >
+                  <option value="">Select Company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Field name="fromName" label="Sent From" defaultValue={defaultValue?.fromName ?? ""} />
+              <FormTextArea name="fromAddress" label="From Address" defaultValue={defaultValue?.fromAddress ?? ""} />
+              <div>
+                <Label htmlFor="to-company-select">Select To Company</Label>
+                <Select
+                  id="to-company-select"
+                  defaultValue={getCompanyIdByName(defaultValue?.toName)}
+                  onChange={(event) =>
+                    applyCompanyToFields(event.target.value, "toName", "toAddress")
+                  }
+                >
+                  <option value="">Select Company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Field name="toName" label="Sent To" defaultValue={defaultValue?.toName ?? ""} />
+              <FormTextArea name="toAddress" label="To Address" defaultValue={defaultValue?.toAddress ?? ""} />
             </div>
-          </>
-        )}
-        {isSuratJalan && (
-          <TextArea name="deliveryNotes" label="Delivery Instructions / Notes" defaultValue={defaultValue?.deliveryNotes ?? ""} />
-        )}
-        {isSph && (
-          <TextArea
-            name="additionalNotesText"
-            label="Additional Information (1 line = 1 point)"
-            defaultValue={sphNotes.additionalNotes}
-            columnClass="col-12"
-          />
-        )}
-      </div>
+          )}
 
-      <section>
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <h2 className="h5 fw-semibold mb-0">Items</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setLines((current) => [...current, emptyLine()]);
-              setPriceInputs((current) => [...current, formatPriceInput(0)]);
-            }}
-            className="btn btn-outline-primary btn-sm"
-          >
-            + Add Row
-          </button>
-        </div>
-        {lines.map((line, index) => (
-          <div key={index} className="border rounded p-3 mb-3">
-            <div className="mb-2">
-              <label className="form-label mb-1">{isSph ? "Item Name" : "Description"}</label>
-              <input
-                className="form-control"
-                placeholder={isSph ? "Item Name" : "Description"}
-                value={line.description}
-                onChange={(event) => updateLine(index, { description: event.target.value })}
-                required
+          {isSph && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="sph-company-select">Select Company</Label>
+                <Select
+                  id="sph-company-select"
+                  defaultValue={getCompanyIdByName(defaultValue?.deliveredToName)}
+                  onChange={(event) =>
+                    applyCompanyToFields(event.target.value, "deliveredToName")
+                  }
+                >
+                  <option value="">Select Company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.companyName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Field name="billToName" label="Recipient (Name)" defaultValue={defaultValue?.billToName ?? ""} />
+              <Field name="deliveredToName" label="Company" defaultValue={defaultValue?.deliveredToName ?? ""} />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {isSph && (
+              <>
+                <div>
+                  <Label htmlFor="offerKind">Offer Kind</Label>
+                  <Select
+                    id="offerKind"
+                    name="offerKind"
+                    defaultValue={defaultValue?.offerKind ?? "PROCUREMENT"}
+                  >
+                    <option value="PROCUREMENT">Pengadaan (Procurement)</option>
+                    <option value="SERVICE">Jasa (Service)</option>
+                  </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    defaultValue={defaultValue?.subject ?? ""}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {isSph && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormTextArea
+                name="paymentTerms"
+                label="Payment Terms"
+                defaultValue={defaultValue?.paymentTerms ?? ""}
+              />
+              <FormTextArea
+                name="notesText"
+                label="Offer Notes (1 line = 1 point)"
+                defaultValue={sphNotes.offerNotes}
               />
             </div>
-            <div className="mb-2">
-              <label className="form-label mb-1">Detail</label>
-              <textarea
-                className="form-control"
-                placeholder={
-                  isSph
-                    ? "Details (1 line per point)"
-                    : isSuratJalan
-                      ? "Details / Serial / Condition"
-                      : "Details"
-                }
-                rows={4}
-                value={line.detail}
-                onChange={(event) => updateLine(index, { detail: event.target.value })}
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {(isInvoice) && (
+              <FormTextArea name="paymentTerms" label="Payment Terms" defaultValue={defaultValue?.paymentTerms ?? ""} />
+            )}
+            {isPo && (
+              <>
+                <PaymentTermSection
+                  initial={{
+                    paymentTermType: defaultValue?.paymentTermType ?? "LUMP_SUM",
+                    paymentTerms: defaultValue?.paymentTerms,
+                    installments: defaultValue?.installments,
+                  }}
+                />
+                <PoLinkSelector
+                  name="linkedPoMasukIds"
+                  label="Link to Incoming PO"
+                  options={incomingPoOptions}
+                  initialSelectedIds={defaultValue?.linkedPoMasukIds ?? []}
+                />
+                <div className="md:col-span-2">
+                  <GoogleDriveLinkFields
+                    initialLink={defaultValue?.gdriveWebViewLink}
+                    initialFileName={defaultValue?.gdriveFileName}
+                  />
+                </div>
+              </>
+            )}
+            {isSuratJalan && (
+              <FormTextArea name="deliveryNotes" label="Delivery Instructions / Notes" defaultValue={defaultValue?.deliveryNotes ?? ""} />
+            )}
+            {isSph && (
+              <FormTextArea
+                name="additionalNotesText"
+                label="Additional Information (1 line = 1 point)"
+                defaultValue={sphNotes.additionalNotes}
+                className="md:col-span-2"
               />
-            </div>
-            <div className="mb-2">
-              <label className="form-label mb-1">Qty</label>
-              <input
-                className="form-control"
-                type="number"
-                min={1}
-                step={1}
-                value={line.quantity}
-                onChange={(event) => updateLine(index, { quantity: Number(event.target.value) })}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label mb-1">Unit</label>
-              <input
-                className="form-control"
-                placeholder="Unit"
-                value={line.unit}
-                onChange={(event) => updateLine(index, { unit: event.target.value })}
-              />
-            </div>
-            <div className="mb-2">
-              <label className="form-label mb-1">Price</label>
-              <input
-                className="form-control"
-                type="text"
-                inputMode="decimal"
-                value={priceInputs[index] ?? ""}
-                onChange={(event) => {
-                  const raw = event.target.value;
-                  setPriceInputs((current) =>
-                    current.map((item, lineIndex) =>
-                      lineIndex === index ? raw : item,
-                    ),
-                  );
-                  updateLine(index, { unitPrice: parsePriceInput(raw) });
-                }}
-                onBlur={() => {
-                  setPriceInputs((current) =>
-                    current.map((item, lineIndex) =>
-                      lineIndex === index ? formatPriceInput(lines[index].unitPrice) : item,
-                    ),
-                  );
-                }}
-                disabled={isSuratJalan}
-              />
-            </div>
-            <div className="d-flex justify-content-end">
-              <button
+            )}
+          </div>
+
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-tda-navy">Items</h2>
+              <Button
                 type="button"
-                onClick={() => removeLine(index)}
-                className="btn btn-outline-danger"
-                disabled={lines.length === 1}
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setLines((current) => [...current, emptyLine()]);
+                  setPriceInputs((current) => [...current, formatPriceInput(0)]);
+                }}
               >
-                Remove
-              </button>
+                + Add Row
+              </Button>
             </div>
-          </div>
-        ))}
-      </section>
+            {lines.map((line, index) => (
+              <div key={index} className="mb-4 rounded-lg border border-slate-200 p-4">
+                <div className="mb-3">
+                  <Label className="mb-1">{isSph ? "Item Name" : "Description"}</Label>
+                  <Input
+                    placeholder={isSph ? "Item Name" : "Description"}
+                    value={line.description}
+                    onChange={(event) => updateLine(index, { description: event.target.value })}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <Label className="mb-1">Detail</Label>
+                  <Textarea
+                    placeholder={
+                      isSph
+                        ? "Details (1 line per point)"
+                        : isSuratJalan
+                          ? "Details / Serial / Condition"
+                          : "Details"
+                    }
+                    rows={4}
+                    value={line.detail}
+                    onChange={(event) => updateLine(index, { detail: event.target.value })}
+                  />
+                </div>
+                <div className="mb-3">
+                  <Label className="mb-1">Qty</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={line.quantity}
+                    onChange={(event) => updateLine(index, { quantity: Number(event.target.value) })}
+                  />
+                </div>
+                <div className="mb-3">
+                  <Label className="mb-1">Unit</Label>
+                  <Input
+                    placeholder="Unit"
+                    value={line.unit}
+                    onChange={(event) => updateLine(index, { unit: event.target.value })}
+                  />
+                </div>
+                <div className="mb-3">
+                  <Label className="mb-1">Price</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={priceInputs[index] ?? ""}
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      setPriceInputs((current) =>
+                        current.map((item, lineIndex) =>
+                          lineIndex === index ? raw : item,
+                        ),
+                      );
+                      updateLine(index, { unitPrice: parsePriceInput(raw) });
+                    }}
+                    onBlur={() => {
+                      setPriceInputs((current) =>
+                        current.map((item, lineIndex) =>
+                          lineIndex === index ? formatPriceInput(lines[index].unitPrice) : item,
+                        ),
+                      );
+                    }}
+                    disabled={isSuratJalan}
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => removeLine(index)}
+                    disabled={lines.length === 1}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </section>
 
-      <button className="btn btn-primary mt-3" type="submit">
-        {submitLabel}
-      </button>
-      </div>
+          <SubmitButton pendingLabel="Saving...">{submitLabel}</SubmitButton>
+        </CardBody>
+      </Card>
     </form>
   );
 }
@@ -761,38 +765,38 @@ function Field({
   type?: string;
 }) {
   return (
-    <div className="col-12 col-md-6">
-      <label className="form-label">{label}</label>
-      <input
+    <div>
+      <Label htmlFor={name}>{label}</Label>
+      <Input
+        id={name}
         name={name}
         defaultValue={defaultValue}
         required={required}
         type={type}
-        className="form-control"
       />
     </div>
   );
 }
 
-function TextArea({
+function FormTextArea({
   name,
   label,
   defaultValue,
-  columnClass = "col-12 col-md-6",
+  className,
 }: {
   name: string;
   label: string;
   defaultValue?: string;
-  columnClass?: string;
+  className?: string;
 }) {
   return (
-    <div className={columnClass}>
-      <label className="form-label">{label}</label>
-      <textarea
+    <div className={cn(className)}>
+      <Label htmlFor={name}>{label}</Label>
+      <Textarea
+        id={name}
         name={name}
         defaultValue={defaultValue}
         rows={3}
-        className="form-control"
       />
     </div>
   );

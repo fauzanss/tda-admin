@@ -1,9 +1,24 @@
 import Link from "next/link";
+import { Eye, PenSquare, Printer } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { DeleteDocumentButton } from "@/app/admin/documents/DeleteDocumentButton";
 import { DuplicateDocumentButton } from "@/app/admin/documents/DuplicateDocumentButton";
 import { asDocumentType } from "@/app/admin/documents/document-type";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/cn";
 import { canWriteFiles } from "@/lib/role-guards";
 import { documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentEditPath, getDocumentNewPath, getDocumentPreviewPath } from "@/lib/document-paths";
@@ -68,82 +83,87 @@ export default async function DocumentListPage({
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">{documentTypeLabels[type]}</h1>
-        {canWrite && (
-          <Link href={getDocumentNewPath(type)} className="btn btn-primary">
-            + New Document
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title={documentTypeLabels[type]}
+        actions={
+          canWrite ? (
+            <Link href={getDocumentNewPath(type)} className={cn(buttonVariants())}>
+              + New Document
+            </Link>
+          ) : undefined
+        }
+      />
 
-      <div className="card">
-        <div className="table-responsive">
-        <table className="table table-striped mb-0">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Company Name</th>
-              <th>Date</th>
-              <th>Last Updated</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>No</TableHead>
+              <TableHead>Company Name</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {documents.length === 0 && (
-              <tr>
-                <td colSpan={6}>
-                  No data available.
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={6} className="p-0">
+                  <EmptyState />
+                </TableCell>
+              </TableRow>
             )}
             {documents.map((doc) => (
-              <tr key={doc.id}>
-                <td>{doc.documentNumber ?? "-"}</td>
-                <td>{getCompanyName(type, doc)}</td>
-                <td>{formatLongDate(doc.issueDate)}</td>
-                <td>{formatDateTime(doc.updatedAt)}</td>
-                <td>
-                  <span className={`badge ${doc.status === "FINAL" ? "text-bg-success" : "text-bg-secondary"}`}>
+              <TableRow key={doc.id}>
+                <TableCell>{doc.documentNumber ?? "-"}</TableCell>
+                <TableCell>{getCompanyName(type, doc)}</TableCell>
+                <TableCell>{formatLongDate(doc.issueDate)}</TableCell>
+                <TableCell>{formatDateTime(doc.updatedAt)}</TableCell>
+                <TableCell>
+                  <Badge variant={doc.status === "FINAL" ? "success" : "muted"}>
                     {doc.status}
-                  </span>
-                </td>
-                <td>
-                  {canWrite && (
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-0.5">
+                    {canWrite && (
+                      <Link
+                        href={getDocumentEditPath(type, doc.id)}
+                        className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                        title="Edit"
+                        aria-label="Edit document"
+                      >
+                        <PenSquare size={16} />
+                      </Link>
+                    )}
                     <Link
-                      href={getDocumentEditPath(type, doc.id)}
-                      className="btn btn-link p-0 me-3 text-decoration-none"
-                      title="Edit"
+                      href={getDocumentPreviewPath(type, doc.id)}
+                      className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                      title="Preview"
+                      aria-label="Preview document"
                     >
-                      <i className="bi bi-pencil-square" />
+                      <Eye size={16} />
                     </Link>
-                  )}
-                  <Link
-                    href={getDocumentPreviewPath(type, doc.id)}
-                    className="btn btn-link p-0 me-3 text-decoration-none"
-                    title="Preview"
-                  >
-                    <i className="bi bi-eye" />
-                  </Link>
-                  <Link
-                    href={`${getDocumentPreviewPath(type, doc.id)}?print=1`}
-                    className="btn btn-link p-0 me-3 text-decoration-none"
-                    title="Print"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <i className="bi bi-printer" />
-                  </Link>
-                  {canWrite && <DuplicateDocumentButton type={type} id={doc.id} />}
-                  {canWrite && <DeleteDocumentButton type={type} id={doc.id} />}
-                </td>
-              </tr>
+                    <Link
+                      href={`${getDocumentPreviewPath(type, doc.id)}?print=1`}
+                      className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                      title="Print"
+                      aria-label="Print document"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Printer size={16} />
+                    </Link>
+                    {canWrite && <DuplicateDocumentButton type={type} id={doc.id} />}
+                    {canWrite && <DeleteDocumentButton type={type} id={doc.id} />}
+                  </div>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-        </div>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </main>
   );
 }

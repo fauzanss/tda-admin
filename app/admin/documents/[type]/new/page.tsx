@@ -3,6 +3,7 @@ import { DocumentType } from "@/generated/prisma/client";
 import { createDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
+import { PageHeader } from "@/components/admin/PageHeader";
 import { documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentListPath } from "@/lib/document-paths";
 import { authOptions } from "@/lib/auth";
@@ -83,7 +84,7 @@ export default async function NewDocumentPage({
 
   return (
     <main>
-      <h1 className="h3 fw-semibold mb-3">New Document - {documentTypeLabels[type as DocumentType]}</h1>
+      <PageHeader title={`New Document - ${documentTypeLabels[type as DocumentType]}`} />
       <DocumentForm
         type={type}
         companies={companies}

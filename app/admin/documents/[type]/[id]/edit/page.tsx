@@ -3,6 +3,11 @@ import Link from "next/link";
 import { finalizeDocument, updateDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { SubmitButton } from "@/components/admin/SubmitButton";
+import { Alert } from "@/components/ui/alert";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 import { documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentListPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { authOptions } from "@/lib/auth";
@@ -154,30 +159,30 @@ export default async function EditDocumentPage({
   return (
     <main>
       {resolvedSearchParams.updated === "1" && (
-        <div className="alert alert-success py-2 mb-3" role="alert">
+        <Alert variant="success" className="mb-4">
           {type === "SPH" ? "Quotation updated successfully." : "Draft updated successfully."}
-        </div>
+        </Alert>
       )}
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">
-          Edit {documentTypeLabels[type]} - {document.documentNumber ?? "(Draft)"}
-        </h1>
-        <div className="d-flex gap-2">
-          <Link
-            href={getDocumentPreviewPath(type, document.id)}
-            className="btn btn-outline-secondary btn-sm"
-          >
-            Preview
-          </Link>
-          {type !== "SPH" && (
-            <form action={onFinalize}>
-              <button className="btn btn-success btn-sm" type="submit">
-                Finalize
-              </button>
-            </form>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={`Edit ${documentTypeLabels[type]} - ${document.documentNumber ?? "(Draft)"}`}
+        actions={
+          <>
+            <Link
+              href={getDocumentPreviewPath(type, document.id)}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Preview
+            </Link>
+            {type !== "SPH" && (
+              <form action={onFinalize}>
+                <SubmitButton variant="secondary" size="sm" pendingLabel="Finalizing...">
+                  Finalize
+                </SubmitButton>
+              </form>
+            )}
+          </>
+        }
+      />
       <DocumentForm
         type={type}
         companies={companies}

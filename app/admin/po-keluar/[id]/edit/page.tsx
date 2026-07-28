@@ -9,6 +9,9 @@ import {
   LinkedIncomingPoPanel,
 } from "@/app/admin/po/PoPanels";
 import { getPoKeluarFormData } from "@/app/admin/po-keluar/form-data";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Alert } from "@/components/ui/alert";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { DocumentType } from "@/generated/prisma/client";
 import { authOptions } from "@/lib/auth";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
@@ -118,28 +121,32 @@ export default async function EditPoKeluarPage({
   return (
     <main>
       {resolvedSearchParams.updated === "1" && (
-        <div className="alert alert-success py-2 mb-3" role="alert">
+        <Alert variant="success" className="mb-4 py-2">
           Draft updated successfully.
-        </div>
+        </Alert>
       )}
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">
-          Edit PO Keluar - {document.documentNumber ?? "(Draft)"}
-        </h1>
-        <div className="d-flex gap-2">
-          <Link
-            href={getDocumentPreviewPath(PO_KELUAR_TYPE, document.id)}
-            className="btn btn-outline-secondary btn-sm"
-          >
-            Preview
-          </Link>
-          <form action={onFinalize}>
-            <button className="btn btn-success btn-sm" type="submit">
-              Finalize
-            </button>
-          </form>
-        </div>
-      </div>
+      <PageHeader
+        title={`Edit PO Keluar - ${document.documentNumber ?? "(Draft)"}`}
+        actions={
+          <>
+            <Link
+              href={getDocumentPreviewPath(PO_KELUAR_TYPE, document.id)}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Preview
+            </Link>
+            <form action={onFinalize}>
+              <Button
+                type="submit"
+                size="sm"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                Finalize
+              </Button>
+            </form>
+          </>
+        }
+      />
 
       <LinkedIncomingPoPanel links={linkedIncoming} />
       <InstallmentsPanel installments={installmentRows} canWrite={canWrite} />

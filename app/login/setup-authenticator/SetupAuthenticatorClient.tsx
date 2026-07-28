@@ -6,6 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { confirmTotpSetup, recordTotpLoginFailure } from "@/app/login/actions";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 
 export function SetupAuthenticatorForm({
   email,
@@ -59,42 +65,53 @@ export function SetupAuthenticatorForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="card shadow-sm">
-      <div className="card-body p-4">
-        <p className="small text-muted mb-3">
-          Scan QR code di Google Authenticator / Authy, lalu masukkan kode 6 digit untuk konfirmasi.
-        </p>
-        <div className="text-center mb-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qrDataUrl} alt="QR code authenticator" width={200} height={200} />
-        </div>
-        <div className="mb-3">
-          <label className="form-label small text-muted">Manual key</label>
-          <code className="d-block small user-select-all">{manualKey}</code>
-        </div>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="setupTotpCode">
-            Kode authenticator
-          </label>
-          <input
-            id="setupTotpCode"
-            value={totpCode}
-            onChange={(event) => setTotpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-            type="text"
-            inputMode="numeric"
-            pattern="\d{6}"
-            maxLength={6}
-            required
-            className="form-control text-center fs-5 letter-spacing-wide"
-            autoComplete="one-time-code"
-            placeholder="000000"
-          />
-        </div>
-        {error && <div className="alert alert-danger py-2">{error}</div>}
-        <button type="submit" disabled={loading || totpCode.length !== 6} className="btn btn-primary w-100">
-          {loading ? "Processing..." : "Aktifkan & masuk"}
-        </button>
-      </div>
+    <form onSubmit={onSubmit}>
+      <Card>
+        <CardBody className="space-y-4 p-6">
+          <p className="text-sm text-tda-navy-muted">
+            Scan QR code di Google Authenticator / Authy, lalu masukkan kode 6 digit untuk konfirmasi.
+          </p>
+          <div className="text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrDataUrl} alt="QR code authenticator" width={200} height={200} />
+          </div>
+          <div>
+            <Label className="text-tda-navy-muted">Manual key</Label>
+            <code className="mt-1 block select-all text-xs text-slate-700">{manualKey}</code>
+          </div>
+          <div>
+            <Label htmlFor="setupTotpCode">Kode authenticator</Label>
+            <Input
+              id="setupTotpCode"
+              value={totpCode}
+              onChange={(event) => setTotpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              type="text"
+              inputMode="numeric"
+              pattern="\d{6}"
+              maxLength={6}
+              required
+              className="text-center text-lg tracking-widest"
+              autoComplete="one-time-code"
+              placeholder="000000"
+            />
+          </div>
+          {error && <Alert variant="danger">{error}</Alert>}
+          <Button
+            type="submit"
+            disabled={loading || totpCode.length !== 6}
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <Spinner size={16} className="text-current" />
+                Processing...
+              </>
+            ) : (
+              "Aktifkan & masuk"
+            )}
+          </Button>
+        </CardBody>
+      </Card>
     </form>
   );
 }
@@ -109,19 +126,19 @@ export function SetupAuthenticatorShell({
   manualKey: string;
 }>) {
   return (
-    <main className="min-vh-100 bg-light d-flex align-items-center justify-content-center p-3">
-      <div style={{ width: "100%", maxWidth: 460 }}>
-        <div className="text-center mb-4">
+    <main className="flex min-h-screen items-center justify-center bg-background p-3">
+      <div className="w-full max-w-[460px]">
+        <div className="mb-6 text-center">
           <Image
             src="/tda-logo-transparent.png"
             alt="PT. Transformasi Digital Abadi"
-            className="login-tda-logo"
+            className="login-tda-logo mx-auto"
             width={200}
             height={75}
             priority
           />
-          <h1 className="h5 fw-semibold mt-3 mb-0">Setup Authenticator</h1>
-          <p className="small text-muted mb-0">{email}</p>
+          <h1 className="mt-3 text-lg font-semibold text-tda-navy">Setup Authenticator</h1>
+          <p className="text-sm text-tda-navy-muted">{email}</p>
         </div>
         <SetupAuthenticatorForm email={email} qrDataUrl={qrDataUrl} manualKey={manualKey} />
       </div>

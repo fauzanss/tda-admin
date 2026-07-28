@@ -1,10 +1,13 @@
 "use client";
 
+import { Copy } from "lucide-react";
 import { DocumentType } from "@/generated/prisma/client";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { duplicateDocument } from "@/app/admin/documents/actions";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 export function DuplicateDocumentButton({
   type,
@@ -17,10 +20,12 @@ export function DuplicateDocumentButton({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <button
+    <Button
       type="button"
-      className="btn btn-link p-0 me-3 text-decoration-none"
+      variant="ghost"
+      size="icon"
       title="Duplicate"
+      aria-label="Duplicate document"
       disabled={isPending}
       onClick={() => {
         startTransition(async () => {
@@ -29,7 +34,7 @@ export function DuplicateDocumentButton({
         });
       }}
     >
-      <i className={`bi ${isPending ? "bi-hourglass-split" : "bi-copy"}`} />
-    </button>
+      {isPending ? <Spinner size={16} className="text-current" /> : <Copy size={16} />}
+    </Button>
   );
 }

@@ -1,3 +1,6 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 type GoogleDriveLinkFieldsProps = Readonly<{
   initialLink?: string | null;
   initialFileName?: string | null;
@@ -11,32 +14,28 @@ export function GoogleDriveLinkFields({
 }: GoogleDriveLinkFieldsProps) {
   return (
     <>
-      <div className="mb-3">
-        <label htmlFor="gdriveLink" className="form-label">
-          Google Drive Link {required && <span className="text-danger">*</span>}
-        </label>
-        <input
+      <div className="space-y-1.5">
+        <Label htmlFor="gdriveLink">
+          Google Drive Link {required && <span className="text-red-600">*</span>}
+        </Label>
+        <Input
           id="gdriveLink"
           name="gdriveLink"
           type="url"
-          className="form-control"
           placeholder="https://drive.google.com/file/d/.../view"
           defaultValue={initialLink ?? ""}
           required={required}
         />
-        <div className="form-text">
+        <p className="text-xs text-tda-navy-muted">
           Upload the file to Google Drive manually, then paste the share link here.
-        </div>
+        </p>
       </div>
-      <div className="mb-3">
-        <label htmlFor="gdriveFileName" className="form-label">
-          File Label
-        </label>
-        <input
+      <div className="mt-4 space-y-1.5">
+        <Label htmlFor="gdriveFileName">File Label</Label>
+        <Input
           id="gdriveFileName"
           name="gdriveFileName"
           type="text"
-          className="form-control"
           placeholder="PO-2024-001.pdf"
           defaultValue={initialFileName ?? ""}
         />

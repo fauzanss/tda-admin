@@ -1,11 +1,28 @@
 import Link from "next/link";
+import { PenSquare } from "lucide-react";
 
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   isMailApiConfigured,
   listMailFolders,
   listMailMessages,
   listMailboxes,
 } from "@/lib/hostinger-mail";
+import { cn } from "@/lib/cn";
 
 function formatMailDate(value: string) {
   const date = new Date(value);
@@ -50,10 +67,10 @@ export default async function EmailInboxPage({
   if (!isMailApiConfigured()) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Inbox</h1>
-        <div className="alert alert-warning">
+        <PageHeader title="Inbox" />
+        <Alert variant="warning">
           Mail API is not configured. Set <code>MAIL_API_TOKEN</code> in the environment.
-        </div>
+        </Alert>
       </main>
     );
   }
@@ -64,10 +81,10 @@ export default async function EmailInboxPage({
   } catch (error) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Inbox</h1>
-        <div className="alert alert-danger">
+        <PageHeader title="Inbox" />
+        <Alert variant="danger">
           {error instanceof Error ? error.message : "Failed to load mailboxes."}
-        </div>
+        </Alert>
       </main>
     );
   }
@@ -75,10 +92,8 @@ export default async function EmailInboxPage({
   if (mailboxes.length === 0) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Inbox</h1>
-        <div className="alert alert-info">
-          No mailboxes are available for this API token.
-        </div>
+        <PageHeader title="Inbox" />
+        <Alert variant="info">No mailboxes are available for this API token.</Alert>
       </main>
     );
   }
@@ -120,126 +135,135 @@ export default async function EmailInboxPage({
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">Inbox</h1>
-        <Link href="/admin/email/compose" className="btn btn-primary btn-sm">
-          Compose
-        </Link>
-      </div>
+      <PageHeader
+        title="Inbox"
+        actions={
+          <Link
+            href="/admin/email/compose"
+            className={cn(buttonVariants({ size: "sm" }))}
+          >
+            <PenSquare size={14} aria-hidden />
+            Compose
+          </Link>
+        }
+      />
 
       {resolved.sent === "1" && (
-        <div className="alert alert-success py-2">Email sent successfully.</div>
+        <Alert variant="success" className="mb-4 py-2">
+          Email sent successfully.
+        </Alert>
       )}
-      {folderError && <div className="alert alert-danger">{folderError}</div>}
-      {messageError && <div className="alert alert-danger">{messageError}</div>}
+      {folderError && (
+        <Alert variant="danger" className="mb-4">
+          {folderError}
+        </Alert>
+      )}
+      {messageError && (
+        <Alert variant="danger" className="mb-4">
+          {messageError}
+        </Alert>
+      )}
 
-      <form method="get" className="card mb-3">
-        <div className="card-body">
-          <div className="row g-3 align-items-end">
-            <div className="col-md-5">
-              <label className="form-label" htmlFor="mailbox">
-                Mailbox
-              </label>
-              <select
-                id="mailbox"
-                name="mailbox"
-                className="form-select"
-                defaultValue={mailbox}
-              >
+      <Card className="mb-4">
+        <CardBody>
+          <form method="get" className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <div>
+              <Label htmlFor="mailbox">Mailbox</Label>
+              <Select id="mailbox" name="mailbox" defaultValue={mailbox}>
                 {mailboxes.map((item) => (
                   <option key={item.resourceId} value={item.resourceId}>
                     {item.address}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
-            <div className="col-md-5">
-              <label className="form-label" htmlFor="folder">
-                Folder
-              </label>
-              <select
-                id="folder"
-                name="folder"
-                className="form-select"
-                defaultValue={folder}
-              >
+            <div>
+              <Label htmlFor="folder">Folder</Label>
+              <Select id="folder" name="folder" defaultValue={folder}>
                 {folders.length === 0 && <option value={folder}>{folder}</option>}
                 {folders.map((item) => (
                   <option key={item.path} value={item.path}>
                     {item.name} ({item.unreadCount}/{item.messageCount})
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
-            <div className="col-md-2">
-              <button type="submit" className="btn btn-outline-primary w-100">
-                Open
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
+            <Button type="submit" variant="outline" className="w-full md:w-auto">
+              Open
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
 
-      <div className="card">
-        <div className="table-responsive">
-          <table className="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th style={{ width: "28%" }}>From</th>
-                <th>Subject</th>
-                <th style={{ width: "18%" }}>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="text-muted">
-                    No messages in this folder.
-                  </td>
-                </tr>
-              )}
-              {messages.map((message) => {
-                const fromLabel =
-                  message.fromName || message.fromAddress
-                    ? `${message.fromName ? `${message.fromName} ` : ""}${
-                        message.fromAddress ? `<${message.fromAddress}>` : ""
-                      }`.trim()
-                    : "(Unknown)";
-                const href = `/admin/email/message?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}&uid=${message.uid}`;
-                return (
-                  <tr key={message.uid} className={message.unseen ? "table-warning" : undefined}>
-                    <td>
-                      <Link href={href} className="text-decoration-none text-body">
-                        {message.unseen && (
-                          <span className="badge text-bg-primary me-2">Unread</span>
-                        )}
-                        {fromLabel}
-                      </Link>
-                    </td>
-                    <td>
-                      <Link href={href} className="text-decoration-none text-body">
-                        {message.subject || "(No subject)"}
-                      </Link>
-                    </td>
-                    <td>{formatMailDate(message.date)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[28%]">From</TableHead>
+              <TableHead>Subject</TableHead>
+              <TableHead className="w-[18%]">Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {messages.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-tda-navy-muted">
+                  No messages in this folder.
+                </TableCell>
+              </TableRow>
+            )}
+            {messages.map((message) => {
+              const fromLabel =
+                message.fromName || message.fromAddress
+                  ? `${message.fromName ? `${message.fromName} ` : ""}${
+                      message.fromAddress ? `<${message.fromAddress}>` : ""
+                    }`.trim()
+                  : "(Unknown)";
+              const href = `/admin/email/message?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}&uid=${message.uid}`;
+              return (
+                <TableRow
+                  key={message.uid}
+                  className={message.unseen ? "bg-amber-50/60" : undefined}
+                >
+                  <TableCell>
+                    <Link
+                      href={href}
+                      className="text-slate-800 no-underline hover:text-tda-navy"
+                    >
+                      {message.unseen && (
+                        <Badge variant="default" className="mr-2">
+                          Unread
+                        </Badge>
+                      )}
+                      {fromLabel}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={href}
+                      className="text-slate-800 no-underline hover:text-tda-navy"
+                    >
+                      {message.subject || "(No subject)"}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{formatMailDate(message.date)}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Card>
 
       {pagination.totalPages > 1 && (
-        <div className="d-flex justify-content-between align-items-center mt-3">
-          <div className="text-muted small">
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <p className="text-xs text-tda-navy-muted">
             Page {pagination.page} of {pagination.totalPages} ({pagination.total} messages)
-          </div>
-          <div className="d-flex gap-2">
+          </p>
+          <div className="flex gap-2">
             {pagination.page > 1 && (
               <Link
                 href={buildInboxHref({ mailbox, folder, page: pagination.page - 1 })}
-                className="btn btn-outline-secondary btn-sm"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               >
                 Previous
               </Link>
@@ -247,7 +271,7 @@ export default async function EmailInboxPage({
             {pagination.page < pagination.totalPages && (
               <Link
                 href={buildInboxHref({ mailbox, folder, page: pagination.page + 1 })}
-                className="btn btn-outline-secondary btn-sm"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               >
                 Next
               </Link>

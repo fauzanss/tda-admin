@@ -1,9 +1,15 @@
 import Link from "next/link";
+import { Reply } from "lucide-react";
 
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Alert } from "@/components/ui/alert";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getMailMessageDetail,
   isMailApiConfigured,
 } from "@/lib/hostinger-mail";
+import { cn } from "@/lib/cn";
 
 function formatMailDate(value: string) {
   const date = new Date(value);
@@ -46,10 +52,10 @@ export default async function EmailMessagePage({
   if (!isMailApiConfigured()) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Message</h1>
-        <div className="alert alert-warning">
+        <PageHeader title="Message" />
+        <Alert variant="warning">
           Mail API is not configured. Set <code>MAIL_API_TOKEN</code> in the environment.
-        </div>
+        </Alert>
       </main>
     );
   }
@@ -57,9 +63,14 @@ export default async function EmailMessagePage({
   if (!mailbox || !Number.isFinite(uid) || uid <= 0) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Message</h1>
-        <div className="alert alert-danger">Invalid message reference.</div>
-        <Link href="/admin/email" className="btn btn-outline-secondary btn-sm">
+        <PageHeader title="Message" />
+        <Alert variant="danger" className="mb-4">
+          Invalid message reference.
+        </Alert>
+        <Link
+          href="/admin/email"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        >
           Back to Inbox
         </Link>
       </main>
@@ -72,13 +83,13 @@ export default async function EmailMessagePage({
   } catch (error) {
     return (
       <main>
-        <h1 className="h3 fw-semibold mb-3">Message</h1>
-        <div className="alert alert-danger">
+        <PageHeader title="Message" />
+        <Alert variant="danger" className="mb-4">
           {error instanceof Error ? error.message : "Failed to load message."}
-        </div>
+        </Alert>
         <Link
           href={`/admin/email?mailbox=${encodeURIComponent(mailbox)}&folder=${encodeURIComponent(folder)}`}
-          className="btn btn-outline-secondary btn-sm"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
         >
           Back to Inbox
         </Link>
@@ -95,58 +106,66 @@ export default async function EmailMessagePage({
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-        <h1 className="h3 fw-semibold mb-0">Message</h1>
-        <div className="d-flex gap-2">
-          <Link href={inboxHref} className="btn btn-outline-secondary btn-sm">
-            Back to Inbox
-          </Link>
-          <Link href={composeHref} className="btn btn-primary btn-sm">
-            Reply
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Message"
+        actions={
+          <>
+            <Link
+              href={inboxHref}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Back to Inbox
+            </Link>
+            <Link href={composeHref} className={cn(buttonVariants({ size: "sm" }))}>
+              <Reply size={14} aria-hidden />
+              Reply
+            </Link>
+          </>
+        }
+      />
 
-      <div className="card mb-3">
-        <div className="card-body">
-          <dl className="row mb-0">
-            <dt className="col-sm-2">Subject</dt>
-            <dd className="col-sm-10">{detail.subject || "(No subject)"}</dd>
-            <dt className="col-sm-2">From</dt>
-            <dd className="col-sm-10">
+      <Card className="mb-4">
+        <CardBody>
+          <dl className="grid gap-3 sm:grid-cols-[minmax(5rem,8rem)_1fr]">
+            <dt className="text-sm font-medium text-tda-navy-muted">Subject</dt>
+            <dd className="text-sm text-slate-800">{detail.subject || "(No subject)"}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">From</dt>
+            <dd className="text-sm text-slate-800">
               {detail.fromName
                 ? `${detail.fromName} <${detail.fromAddress}>`
                 : detail.fromAddress || "-"}
             </dd>
-            <dt className="col-sm-2">To</dt>
-            <dd className="col-sm-10">{formatAddressList(detail.to)}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">To</dt>
+            <dd className="text-sm text-slate-800">{formatAddressList(detail.to)}</dd>
             {detail.cc.length > 0 && (
               <>
-                <dt className="col-sm-2">Cc</dt>
-                <dd className="col-sm-10">{formatAddressList(detail.cc)}</dd>
+                <dt className="text-sm font-medium text-tda-navy-muted">Cc</dt>
+                <dd className="text-sm text-slate-800">{formatAddressList(detail.cc)}</dd>
               </>
             )}
-            <dt className="col-sm-2">Date</dt>
-            <dd className="col-sm-10">{formatMailDate(detail.date)}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">Date</dt>
+            <dd className="text-sm text-slate-800">{formatMailDate(detail.date)}</dd>
           </dl>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
-      <div className="card">
-        <div className="card-header fw-semibold">Body</div>
-        <div className="card-body">
+      <Card>
+        <CardHeader>
+          <CardTitle>Body</CardTitle>
+        </CardHeader>
+        <CardBody>
           {detail.html ? (
             <div
               className="mail-body"
               dangerouslySetInnerHTML={{ __html: detail.html }}
             />
           ) : (
-            <pre className="mb-0" style={{ whiteSpace: "pre-wrap", fontFamily: "inherit" }}>
+            <pre className="mb-0 whitespace-pre-wrap font-[inherit] text-sm text-slate-800">
               {detail.text || "(Empty message)"}
             </pre>
           )}
-        </div>
-      </div>
+        </CardBody>
+      </Card>
     </main>
   );
 }

@@ -1,8 +1,23 @@
 import Link from "next/link";
+import { Eye, Pencil } from "lucide-react";
 
 import { DeleteDocumentButton } from "@/app/admin/documents/DeleteDocumentButton";
 import { DuplicateDocumentButton } from "@/app/admin/documents/DuplicateDocumentButton";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { authOptions } from "@/lib/auth";
+import { cn } from "@/lib/cn";
 import { getDocumentEditPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
@@ -42,85 +57,101 @@ export default async function PoKeluarListPage() {
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">PO Keluar</h1>
-        {canWrite && (
-          <Link href="/admin/po-keluar/new" className="btn btn-primary">
-            + New PO Keluar
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="PO Keluar"
+        actions={
+          canWrite ? (
+            <Link
+              href="/admin/po-keluar/new"
+              className={buttonVariants({ variant: "default" })}
+            >
+              + New PO Keluar
+            </Link>
+          ) : undefined
+        }
+      />
 
-      <div className="card">
-        <div className="table-responsive">
-          <table className="table table-striped mb-0">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Company Name</th>
-                <th>Date</th>
-                <th>Payment</th>
-                <th>Linked</th>
-                <th>Last Updated</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.length === 0 && (
-                <tr>
-                  <td colSpan={8}>No data available.</td>
-                </tr>
-              )}
+      <Card>
+        {documents.length === 0 ? (
+          <EmptyState title="No data available." />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>No</TableHead>
+                <TableHead>Company Name</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Linked</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {documents.map((doc) => (
-                <tr key={doc.id}>
-                  <td>{doc.documentNumber ?? "-"}</td>
-                  <td>{doc.orderToName ?? "-"}</td>
-                  <td>{formatLongDate(doc.issueDate)}</td>
-                  <td>
-                    <span className={`badge ${doc.paymentTermType === "TERMIN" ? "text-bg-info" : "text-bg-secondary"}`}>
+                <TableRow key={doc.id}>
+                  <TableCell>{doc.documentNumber ?? "-"}</TableCell>
+                  <TableCell>{doc.orderToName ?? "-"}</TableCell>
+                  <TableCell>{formatLongDate(doc.issueDate)}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={doc.paymentTermType === "TERMIN" ? "orange" : "muted"}
+                    >
                       {doc.paymentTermType === "TERMIN" ? "Termin" : "Lump Sum"}
-                    </span>
-                  </td>
-                  <td>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {doc._count.poMasukLinks > 0 ? (
-                      <span className="badge text-bg-primary">{doc._count.poMasukLinks}</span>
+                      <Badge>{doc._count.poMasukLinks}</Badge>
                     ) : (
                       "-"
                     )}
-                  </td>
-                  <td>{formatDateTime(doc.updatedAt)}</td>
-                  <td>
-                    <span className={`badge ${doc.status === "FINAL" ? "text-bg-success" : "text-bg-secondary"}`}>
+                  </TableCell>
+                  <TableCell>{formatDateTime(doc.updatedAt)}</TableCell>
+                  <TableCell>
+                    <Badge variant={doc.status === "FINAL" ? "success" : "muted"}>
                       {doc.status}
-                    </span>
-                  </td>
-                  <td>
-                    {canWrite && (
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {canWrite && (
+                        <Link
+                          href={getDocumentEditPath(PO_KELUAR_TYPE, doc.id)}
+                          title="Edit"
+                          className={cn(
+                            buttonVariants({ variant: "link", size: "icon" }),
+                            "text-tda-navy",
+                          )}
+                        >
+                          <Pencil size={16} />
+                        </Link>
+                      )}
                       <Link
-                        href={getDocumentEditPath(PO_KELUAR_TYPE, doc.id)}
-                        className="btn btn-link p-0 me-3 text-decoration-none"
-                        title="Edit"
+                        href={getDocumentPreviewPath(PO_KELUAR_TYPE, doc.id)}
+                        title="Preview"
+                        className={cn(
+                          buttonVariants({ variant: "link", size: "icon" }),
+                          "text-tda-navy",
+                        )}
                       >
-                        <i className="bi bi-pencil-square" />
+                        <Eye size={16} />
                       </Link>
-                    )}
-                    <Link
-                      href={getDocumentPreviewPath(PO_KELUAR_TYPE, doc.id)}
-                      className="btn btn-link p-0 me-3 text-decoration-none"
-                      title="Preview"
-                    >
-                      <i className="bi bi-eye" />
-                    </Link>
-                    {canWrite && <DuplicateDocumentButton type={PO_KELUAR_TYPE} id={doc.id} />}
-                    {canWrite && <DeleteDocumentButton type={PO_KELUAR_TYPE} id={doc.id} />}
-                  </td>
-                </tr>
+                      {canWrite && (
+                        <DuplicateDocumentButton type={PO_KELUAR_TYPE} id={doc.id} />
+                      )}
+                      {canWrite && (
+                        <DeleteDocumentButton type={PO_KELUAR_TYPE} id={doc.id} />
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </TableBody>
+          </Table>
+        )}
+      </Card>
     </main>
   );
 }

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 export type PoLinkOption = {
   id: string;
   label: string;
@@ -32,22 +35,28 @@ export function PoLinkSelector({
   }
 
   return (
-    <div className="col-12">
-      <label className="form-label">{label}</label>
+    <div className="col-span-full space-y-2">
+      <Label>{label}</Label>
       <input type="hidden" name={name} value={JSON.stringify(selectedIds)} />
-      <input
+      <Input
         type="search"
-        className="form-control form-control-sm mb-2"
+        className="h-8 text-xs"
         placeholder="Search..."
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
-      <div className="border rounded p-2" style={{ maxHeight: 180, overflowY: "auto" }}>
-        {filtered.length === 0 && <div className="text-muted small">No options found.</div>}
+      <div className="max-h-[180px] overflow-y-auto rounded-md border border-slate-200 p-2">
+        {filtered.length === 0 && (
+          <p className="text-xs text-tda-navy-muted">No options found.</p>
+        )}
         {filtered.map((option) => (
-          <label key={option.id} className="d-flex align-items-center gap-2 small mb-1">
+          <label
+            key={option.id}
+            className="mb-1 flex cursor-pointer items-center gap-2 text-xs text-slate-700 last:mb-0"
+          >
             <input
               type="checkbox"
+              className="rounded border-slate-300 text-tda-orange focus:ring-tda-orange/40"
               checked={selectedIds.includes(option.id)}
               onChange={() => toggle(option.id)}
             />
@@ -56,7 +65,7 @@ export function PoLinkSelector({
         ))}
       </div>
       {selectedIds.length > 0 && (
-        <div className="form-text">{selectedIds.length} selected</div>
+        <p className="text-xs text-tda-navy-muted">{selectedIds.length} selected</p>
       )}
     </div>
   );

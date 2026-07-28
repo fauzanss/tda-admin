@@ -1,6 +1,25 @@
 "use client";
 
+import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
+
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 
 type Company = {
   id: string;
@@ -113,156 +132,162 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">Company</h1>
-        <button className="btn btn-primary" onClick={openAdd} type="button">
-          <i className="bi bi-plus-lg" aria-hidden="true" />
-          <span className="ms-1">Add Company</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Company"
+        actions={
+          <Button onClick={openAdd} type="button">
+            <Plus size={14} aria-hidden />
+            Add Company
+          </Button>
+        }
+      />
 
-      <section className="card">
-        <div className="table-responsive">
-          <table className="table table-striped mb-0">
-            <thead>
-              <tr>
-                <th>Company Name</th>
-                <th>Company Alias</th>
-                <th>Address</th>
-                <th>Website</th>
-                <th>Is Active</th>
-                <th>Last Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {companies.length === 0 && (
-                <tr>
-                  <td colSpan={7}>No data available.</td>
-                </tr>
-              )}
-              {companies.map((company) => (
-                <tr key={company.id}>
-                  <td>{company.companyName}</td>
-                  <td>{company.companyAlias || "-"}</td>
-                  <td style={{ whiteSpace: "pre-line" }}>{company.address}</td>
-                  <td>{company.website || "-"}</td>
-                  <td>
-                    <span className={`badge ${company.isActive ? "text-bg-success" : "text-bg-secondary"}`}>
-                      {company.isActive ? "Yes" : "No"}
-                    </span>
-                  </td>
-                  <td>
-                    {formatDateTime(company.updatedAt)}
-                  </td>
-                  <td>
-                    <button
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Company Name</TableHead>
+              <TableHead>Company Alias</TableHead>
+              <TableHead>Address</TableHead>
+              <TableHead>Website</TableHead>
+              <TableHead>Is Active</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {companies.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-tda-navy-muted">
+                  No data available.
+                </TableCell>
+              </TableRow>
+            )}
+            {companies.map((company) => (
+              <TableRow key={company.id}>
+                <TableCell>{company.companyName}</TableCell>
+                <TableCell>{company.companyAlias || "-"}</TableCell>
+                <TableCell className="whitespace-pre-line">{company.address}</TableCell>
+                <TableCell>{company.website || "-"}</TableCell>
+                <TableCell>
+                  <Badge variant={company.isActive ? "success" : "muted"}>
+                    {company.isActive ? "Yes" : "No"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{formatDateTime(company.updatedAt)}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
                       type="button"
-                      className="btn btn-link p-0 me-3 text-decoration-none"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Edit company"
                       onClick={() => openEdit(company)}
                     >
-                      <i className="bi bi-pencil-square" />
-                    </button>
-                    <button
+                      <Pencil size={16} aria-hidden />
+                    </Button>
+                    <Button
                       type="button"
-                      className="btn btn-link p-0 text-decoration-none text-danger"
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      aria-label="Delete company"
                       onClick={() => handleDelete(company.id)}
                     >
-                      <i className="bi bi-trash" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                      <Trash2 size={16} aria-hidden />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       {showModal && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 p-3"
-          style={{ zIndex: 1050 }}
-        >
-          <div className="card w-100" style={{ maxWidth: 720 }}>
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <h2 className="h5 mb-0">{modalTitle}</h2>
-              <button className="btn-close" onClick={() => setShowModal(false)} type="button" />
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3">
+          <Card className="w-full max-w-2xl">
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <CardTitle>{modalTitle}</CardTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowModal(false)}
+                aria-label="Close"
+              >
+                <X size={16} aria-hidden />
+              </Button>
+            </CardHeader>
             <form onSubmit={handleSubmit}>
-              <div className="card-body row g-3">
-                <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="companyName">
-                    Company Name
-                  </label>
-                  <input
+              <CardBody className="grid gap-4 pt-0 md:grid-cols-2">
+                <div className="md:col-span-1">
+                  <Label htmlFor="companyName">Company Name</Label>
+                  <Input
                     id="companyName"
-                    className="form-control"
                     value={form.companyName}
                     onChange={(e) => setForm((prev) => ({ ...prev, companyName: e.target.value }))}
                     required
                   />
                 </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="companyAlias">
-                    Company Alias
-                  </label>
-                  <input
+                <div className="md:col-span-1">
+                  <Label htmlFor="companyAlias">Company Alias</Label>
+                  <Input
                     id="companyAlias"
-                    className="form-control"
                     value={form.companyAlias}
                     onChange={(e) => setForm((prev) => ({ ...prev, companyAlias: e.target.value }))}
                   />
                 </div>
-                <div className="col-12">
-                  <label className="form-label" htmlFor="companyAddress">
-                    Address
-                  </label>
-                  <textarea
+                <div className="md:col-span-2">
+                  <Label htmlFor="companyAddress">Address</Label>
+                  <Textarea
                     id="companyAddress"
-                    className="form-control"
                     rows={3}
                     value={form.address}
                     onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
                     required
                   />
                 </div>
-                <div className="col-12">
-                  <label className="form-label" htmlFor="companyWebsite">
-                    Website
-                  </label>
-                  <input
+                <div className="md:col-span-2">
+                  <Label htmlFor="companyWebsite">Website</Label>
+                  <Input
                     id="companyWebsite"
-                    className="form-control"
                     placeholder="https://example.com"
                     value={form.website}
                     onChange={(e) => setForm((prev) => ({ ...prev, website: e.target.value }))}
                   />
                 </div>
-                <div className="col-12 col-md-6">
-                  <label className="form-label" htmlFor="isActive">
-                    Is Active
-                  </label>
-                  <select
+                <div className="md:col-span-1">
+                  <Label htmlFor="isActive">Is Active</Label>
+                  <Select
                     id="isActive"
-                    className="form-select"
                     value={String(form.isActive)}
-                    onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.value === "true" }))}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, isActive: e.target.value === "true" }))
+                    }
                   >
                     <option value="true">Yes</option>
                     <option value="false">No</option>
-                  </select>
+                  </Select>
                 </div>
-              </div>
-              <div className="card-footer d-flex justify-content-end gap-2">
-                <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)}>
+              </CardBody>
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-4 py-3">
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
                   Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  {loading ? "Saving..." : "Save"}
-                </button>
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Spinner size={16} className="text-current" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </Button>
               </div>
             </form>
-          </div>
+          </Card>
         </div>
       )}
     </main>

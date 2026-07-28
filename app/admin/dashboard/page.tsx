@@ -1,6 +1,18 @@
 import Link from "next/link";
 
 import { MarkInstallmentPaidButton } from "@/app/admin/po/MarkInstallmentPaidButton";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatCurrencyAmount } from "@/lib/documents";
 import { getUpcomingInstallments } from "@/lib/po-payment";
 import { prisma } from "@/lib/prisma";
@@ -39,74 +51,78 @@ export default async function DashboardPage() {
 
   return (
     <main>
-      <h1 className="h3 fw-semibold mb-3">Dashboard</h1>
-      <div className="row g-3 mb-3">
-        <div className="col-12 col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <p className="text-muted mb-1">Draft Documents</p>
-              <p className="display-6 fw-bold mb-0">{draftCount}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-12 col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <p className="text-muted mb-1">Final Documents</p>
-              <p className="display-6 fw-bold mb-0">{finalCount}</p>
-            </div>
-          </div>
-        </div>
+      <PageHeader title="Dashboard" />
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardBody>
+            <p className="mb-1 text-sm text-tda-navy-muted">Draft Documents</p>
+            <p className="text-4xl font-bold text-tda-navy">{draftCount}</p>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <p className="mb-1 text-sm text-tda-navy-muted">Final Documents</p>
+            <p className="text-4xl font-bold text-tda-navy">{finalCount}</p>
+          </CardBody>
+        </Card>
       </div>
 
-      <div className="card">
-        <div className="card-header fw-semibold">Upcoming Payment Due (30 days)</div>
-        <div className="table-responsive">
-          <table className="table table-sm mb-0">
-            <thead>
-              <tr>
-                <th>PO</th>
-                <th>Type</th>
-                <th>Installment</th>
-                <th>%</th>
-                <th>Amount</th>
-                <th>Due Date</th>
-                {canWrite && <th>Action</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {upcoming.length === 0 && (
-                <tr>
-                  <td colSpan={canWrite ? 7 : 6} className="text-muted">
-                    No upcoming payments in the next 30 days.
-                  </td>
-                </tr>
-              )}
-              {upcoming.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <Link href={row.poHref}>{row.poLabel}</Link>
-                  </td>
-                  <td>
-                    <span className={`badge ${row.kind === "INCOMING" ? "text-bg-primary" : "text-bg-secondary"}`}>
-                      {row.kind === "INCOMING" ? "Masuk" : "Keluar"}
-                    </span>
-                  </td>
-                  <td>{row.label ?? "-"}</td>
-                  <td>{row.percentage}%</td>
-                  <td>{row.amount != null ? formatCurrencyAmount(row.amount) : "-"}</td>
-                  <td>{formatDueDate(row.dueDate)}</td>
-                  {canWrite && (
-                    <td>
-                      <MarkInstallmentPaidButton id={row.id} />
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Upcoming Payment Due (30 days)</CardTitle>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>PO</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Installment</TableHead>
+              <TableHead>%</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Due Date</TableHead>
+              {canWrite && <TableHead>Action</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {upcoming.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={canWrite ? 7 : 6} className="p-0">
+                  <EmptyState title="No upcoming payments in the next 30 days." />
+                </TableCell>
+              </TableRow>
+            )}
+            {upcoming.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>
+                  <Link
+                    href={row.poHref}
+                    className="font-medium text-tda-navy hover:underline"
+                  >
+                    {row.poLabel}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={row.kind === "INCOMING" ? "default" : "muted"}>
+                    {row.kind === "INCOMING" ? "Masuk" : "Keluar"}
+                  </Badge>
+                </TableCell>
+                <TableCell>{row.label ?? "-"}</TableCell>
+                <TableCell>{row.percentage}%</TableCell>
+                <TableCell>
+                  {row.amount != null ? formatCurrencyAmount(row.amount) : "-"}
+                </TableCell>
+                <TableCell>{formatDueDate(row.dueDate)}</TableCell>
+                {canWrite && (
+                  <TableCell>
+                    <MarkInstallmentPaidButton id={row.id} />
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </main>
   );
 }

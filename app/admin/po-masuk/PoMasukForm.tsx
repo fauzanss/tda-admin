@@ -6,6 +6,12 @@ import { useState } from "react";
 import { GoogleDriveLinkFields } from "@/app/admin/po/GoogleDriveLinkFields";
 import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
 import { PoLinkOption, PoLinkSelector } from "@/app/admin/po/PoLinkSelector";
+import { SubmitButton } from "@/components/admin/SubmitButton";
+import { Alert } from "@/components/ui/alert";
+import { Card, CardBody } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { InstallmentInput } from "@/lib/po-payment";
 
 type PoMasukFormProps = Readonly<{
@@ -45,123 +51,104 @@ export function PoMasukForm({
   requireGdriveLink = false,
 }: PoMasukFormProps) {
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
     <form
       action={async (formData) => {
         setError(null);
-        setIsSubmitting(true);
         try {
           await action(formData);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to save Incoming PO.");
-          setIsSubmitting(false);
         }
       }}
-      className="card"
     >
-      <div className="card-body">
-        {initial?.id && <input type="hidden" name="id" value={initial.id} />}
+      <Card>
+        <CardBody className="space-y-4">
+          {initial?.id && <input type="hidden" name="id" value={initial.id} />}
 
-        <div className="mb-3">
-          <label htmlFor="distributorName" className="form-label">
-            Distributor Name <span className="text-danger">*</span>
-          </label>
-          <input
-            id="distributorName"
-            name="distributorName"
-            type="text"
-            className="form-control"
-            defaultValue={initial?.distributorName ?? ""}
-            required
-          />
-        </div>
-
-        <div className="row g-3">
-          <div className="col-md-6">
-            <label htmlFor="poNumber" className="form-label">
-              PO Number
-            </label>
-            <input
-              id="poNumber"
-              name="poNumber"
+          <div className="space-y-1.5">
+            <Label htmlFor="distributorName">
+              Distributor Name <span className="text-red-600">*</span>
+            </Label>
+            <Input
+              id="distributorName"
+              name="distributorName"
               type="text"
-              className="form-control"
-              defaultValue={initial?.poNumber ?? ""}
+              defaultValue={initial?.distributorName ?? ""}
+              required
             />
           </div>
-          <div className="col-md-6">
-            <label htmlFor="issueDate" className="form-label">
-              Issue Date
-            </label>
-            <input
-              id="issueDate"
-              name="issueDate"
-              type="date"
-              className="form-control"
-              defaultValue={formatDateInput(initial?.issueDate)}
-            />
-          </div>
-          <div className="col-md-6">
-            <label htmlFor="totalAmount" className="form-label">
-              Total Amount (for termin calculation)
-            </label>
-            <input
-              id="totalAmount"
-              name="totalAmount"
-              type="number"
-              min={0}
-              step={1}
-              className="form-control"
-              defaultValue={initial?.totalAmount ?? ""}
-            />
-          </div>
-        </div>
 
-        <div className="row g-3 mt-1">
-          <PaymentTermSection
-            initial={{
-              paymentTermType: initial?.paymentTermType ?? "LUMP_SUM",
-              paymentTerms: initial?.paymentTerms,
-              installments: initial?.installments,
-            }}
-          />
-          <PoLinkSelector
-            name="linkedPurchaseOrderIds"
-            label="Link to Outgoing PO"
-            options={outgoingPoOptions}
-            initialSelectedIds={initial?.linkedPurchaseOrderIds ?? []}
-          />
-        </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="poNumber">PO Number</Label>
+              <Input
+                id="poNumber"
+                name="poNumber"
+                type="text"
+                defaultValue={initial?.poNumber ?? ""}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="issueDate">Issue Date</Label>
+              <Input
+                id="issueDate"
+                name="issueDate"
+                type="date"
+                defaultValue={formatDateInput(initial?.issueDate)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="totalAmount">Total Amount (for termin calculation)</Label>
+              <Input
+                id="totalAmount"
+                name="totalAmount"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={initial?.totalAmount ?? ""}
+              />
+            </div>
+          </div>
 
-        <div className="mt-3">
+          <div className="grid gap-4">
+            <PaymentTermSection
+              initial={{
+                paymentTermType: initial?.paymentTermType ?? "LUMP_SUM",
+                paymentTerms: initial?.paymentTerms,
+                installments: initial?.installments,
+              }}
+            />
+            <PoLinkSelector
+              name="linkedPurchaseOrderIds"
+              label="Link to Outgoing PO"
+              options={outgoingPoOptions}
+              initialSelectedIds={initial?.linkedPurchaseOrderIds ?? []}
+            />
+          </div>
+
           <GoogleDriveLinkFields
             initialLink={initial?.gdriveWebViewLink}
             initialFileName={initial?.gdriveFileName}
             required={requireGdriveLink}
           />
-        </div>
 
-        <div className="mb-3 mt-3">
-          <label htmlFor="notes" className="form-label">
-            Notes
-          </label>
-          <textarea
-            id="notes"
-            name="notes"
-            className="form-control"
-            rows={3}
-            defaultValue={initial?.notes ?? ""}
-          />
-        </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              defaultValue={initial?.notes ?? ""}
+            />
+          </div>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+          {error && <Alert variant="danger">{error}</Alert>}
 
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : submitLabel}
-        </button>
-      </div>
+          <SubmitButton pendingLabel="Saving...">{submitLabel}</SubmitButton>
+        </CardBody>
+      </Card>
     </form>
   );
 }

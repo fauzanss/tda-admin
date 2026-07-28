@@ -1,12 +1,35 @@
+@import "tailwindcss";
+
 :root {
-  --background: #ffffff;
+  --background: #f4f5f8;
   --foreground: #171717;
+  --tda-navy: #232557;
+  --tda-navy-deep: #242745;
+  --tda-navy-muted: #4c4e7b;
+  --tda-orange: #dc6b04;
+  --tda-orange-muted: #bc743c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-tda-navy: var(--tda-navy);
+  --color-tda-navy-deep: var(--tda-navy-deep);
+  --color-tda-navy-muted: var(--tda-navy-muted);
+  --color-tda-orange: var(--tda-orange);
+  --color-tda-orange-muted: var(--tda-orange-muted);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Times New Roman", serif;
+  font-family: var(--font-sans);
+}
+
+.doc-preview {
+  font-family: "Times New Roman", Times, serif;
 }
 
 .doc-preview.container {
@@ -325,9 +348,15 @@ body {
   height: 80px;
 }
 
-.doc-preview .row.g-4 {
-  --bs-gutter-y: 0.5rem;
-  --bs-gutter-x: 0.75rem;
+.doc-preview .signature-dual {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.doc-preview .signature-dual-col {
+  flex: 1;
+  min-width: 0;
 }
 
 .print-button {
@@ -336,7 +365,7 @@ body {
   right: 20px;
   border: none;
   border-radius: 4px;
-  background: #2c3e50;
+  background: #232557;
   color: white;
   padding: 10px 16px;
 }
@@ -350,14 +379,6 @@ body {
 
   .no-print {
     display: none !important;
-  }
-
-  .admin-layout .container-fluid,
-  .admin-layout .row {
-    margin: 0 !important;
-    padding: 0 !important;
-    --bs-gutter-x: 0 !important;
-    --bs-gutter-y: 0 !important;
   }
 
   .admin-layout .print-content {

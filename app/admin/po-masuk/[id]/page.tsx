@@ -9,6 +9,10 @@ import {
 import { updatePoMasuk } from "@/app/admin/po-masuk/actions";
 import { DeletePoMasukButton } from "@/app/admin/po-masuk/DeletePoMasukButton";
 import { PoMasukForm } from "@/app/admin/po-masuk/PoMasukForm";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardBody } from "@/components/ui/card";
 import { authOptions } from "@/lib/auth";
 import {
   listOutgoingPoOptions,
@@ -68,54 +72,68 @@ export default async function PoMasukDetailPage({
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">PO Masuk Detail</h1>
-        <div className="d-flex gap-2">
-          <Link href="/admin/po-masuk" className="btn btn-outline-secondary btn-sm">
-            Back to list
-          </Link>
-          {canWrite && <DeletePoMasukButton id={record.id} />}
-        </div>
-      </div>
+      <PageHeader
+        title="PO Masuk Detail"
+        actions={
+          <>
+            <Link
+              href="/admin/po-masuk"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Back to list
+            </Link>
+            {canWrite && <DeletePoMasukButton id={record.id} />}
+          </>
+        }
+      />
 
-      <div className="card mb-3">
-        <div className="card-body">
-          <dl className="row mb-0">
-            <dt className="col-sm-3">Distributor</dt>
-            <dd className="col-sm-9">{record.distributorName}</dd>
-            <dt className="col-sm-3">PO Number</dt>
-            <dd className="col-sm-9">{record.poNumber ?? "-"}</dd>
-            <dt className="col-sm-3">Issue Date</dt>
-            <dd className="col-sm-9">{formatLongDate(record.issueDate)}</dd>
-            <dt className="col-sm-3">Payment Type</dt>
-            <dd className="col-sm-9">
-              <span className={`badge ${record.paymentTermType === "TERMIN" ? "text-bg-info" : "text-bg-secondary"}`}>
+      <Card className="mb-4">
+        <CardBody>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[minmax(8rem,1fr)_2fr]">
+            <dt className="text-sm font-medium text-tda-navy-muted">Distributor</dt>
+            <dd className="text-sm text-slate-700">{record.distributorName}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">PO Number</dt>
+            <dd className="text-sm text-slate-700">{record.poNumber ?? "-"}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">Issue Date</dt>
+            <dd className="text-sm text-slate-700">{formatLongDate(record.issueDate)}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">Payment Type</dt>
+            <dd className="text-sm text-slate-700">
+              <Badge
+                variant={record.paymentTermType === "TERMIN" ? "orange" : "muted"}
+              >
                 {record.paymentTermType === "TERMIN" ? "Termin" : "Lump Sum"}
-              </span>
+              </Badge>
             </dd>
             {record.totalAmount != null && (
               <>
-                <dt className="col-sm-3">Total Amount</dt>
-                <dd className="col-sm-9">{Number(record.totalAmount).toLocaleString("id-ID")}</dd>
+                <dt className="text-sm font-medium text-tda-navy-muted">Total Amount</dt>
+                <dd className="text-sm text-slate-700">
+                  {Number(record.totalAmount).toLocaleString("id-ID")}
+                </dd>
               </>
             )}
             {record.paymentTermType === "LUMP_SUM" && record.paymentTerms && (
               <>
-                <dt className="col-sm-3">Payment Terms</dt>
-                <dd className="col-sm-9">{record.paymentTerms}</dd>
+                <dt className="text-sm font-medium text-tda-navy-muted">Payment Terms</dt>
+                <dd className="text-sm text-slate-700">{record.paymentTerms}</dd>
               </>
             )}
-            <dt className="col-sm-3">File</dt>
-            <dd className="col-sm-9">
-              <a href={viewUrl} target="_blank" rel="noopener noreferrer">
+            <dt className="text-sm font-medium text-tda-navy-muted">File</dt>
+            <dd className="text-sm text-slate-700">
+              <a
+                href={viewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-tda-navy underline-offset-4 hover:underline"
+              >
                 {fileLabel}
               </a>
             </dd>
-            <dt className="col-sm-3">Notes</dt>
-            <dd className="col-sm-9">{record.notes ?? "-"}</dd>
+            <dt className="text-sm font-medium text-tda-navy-muted">Notes</dt>
+            <dd className="text-sm text-slate-700">{record.notes ?? "-"}</dd>
           </dl>
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       <LinkedOutgoingPoPanel links={linkedOutgoing} />
       <InstallmentsPanel installments={installmentRows} canWrite={canWrite} />
@@ -128,7 +146,7 @@ export default async function PoMasukDetailPage({
 
       {canWrite && (
         <>
-          <h2 className="h5 fw-semibold mb-3">Edit Metadata</h2>
+          <h2 className="mb-3 text-lg font-semibold text-tda-navy">Edit Metadata</h2>
           <PoMasukForm
             action={updatePoMasuk}
             submitLabel="Save Changes"

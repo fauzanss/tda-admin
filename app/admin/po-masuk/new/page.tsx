@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { createPoMasuk } from "@/app/admin/po-masuk/actions";
 import { PoMasukForm } from "@/app/admin/po-masuk/PoMasukForm";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { buttonVariants } from "@/components/ui/button";
 import { listOutgoingPoOptions } from "@/lib/po-payment";
 
 export default async function NewPoMasukPage() {
@@ -12,12 +14,17 @@ export default async function NewPoMasukPage() {
 
   return (
     <main>
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h1 className="h3 fw-semibold mb-0">New PO Masuk</h1>
-        <Link href="/admin/po-masuk" className="btn btn-outline-secondary btn-sm">
-          Back to list
-        </Link>
-      </div>
+      <PageHeader
+        title="New PO Masuk"
+        actions={
+          <Link
+            href="/admin/po-masuk"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Back to list
+          </Link>
+        }
+      />
 
       <PoMasukForm
         action={createPoMasuk}

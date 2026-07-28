@@ -3,6 +3,11 @@
 import { PaymentTermType } from "@/generated/prisma/client";
 import { useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import type { InstallmentInput } from "@/lib/po-payment";
 
 export type PaymentTermInitial = {
@@ -57,24 +62,26 @@ export function PaymentTermSection({
   }
 
   return (
-    <div className="col-12">
-      <label className="form-label">Payment Type</label>
-      <select
-        name="paymentTermType"
-        className="form-select mb-3"
-        value={paymentTermType}
-        onChange={(event) => setPaymentTermType(event.target.value as PaymentTermType)}
-      >
-        <option value="LUMP_SUM">Lump Sum</option>
-        <option value="TERMIN">Termin (Installments)</option>
-      </select>
+    <div className="col-span-full space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="paymentTermType">Payment Type</Label>
+        <Select
+          id="paymentTermType"
+          name="paymentTermType"
+          value={paymentTermType}
+          onChange={(event) => setPaymentTermType(event.target.value as PaymentTermType)}
+        >
+          <option value="LUMP_SUM">Lump Sum</option>
+          <option value="TERMIN">Termin (Installments)</option>
+        </Select>
+      </div>
 
       {paymentTermType === "LUMP_SUM" && showPaymentTermsTextarea && (
-        <div className="mb-3">
-          <label className="form-label">Payment Terms</label>
-          <textarea
+        <div className="space-y-1.5">
+          <Label htmlFor="paymentTerms">Payment Terms</Label>
+          <Textarea
+            id="paymentTerms"
             name="paymentTerms"
-            className="form-control"
             rows={3}
             defaultValue={initial?.paymentTerms ?? ""}
           />
@@ -82,47 +89,56 @@ export function PaymentTermSection({
       )}
 
       {paymentTermType === "TERMIN" && (
-        <div className="mb-3">
-          <div className="d-flex align-items-center justify-content-between mb-2">
-            <label className="form-label mb-0">Installments</label>
-            <span className={`small ${Math.abs(percentageTotal - 100) < 0.01 ? "text-success" : "text-danger"}`}>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="mb-0">Installments</Label>
+            <span
+              className={
+                Math.abs(percentageTotal - 100) < 0.01
+                  ? "text-xs text-emerald-600"
+                  : "text-xs text-red-600"
+              }
+            >
               Total: {percentageTotal.toFixed(2)}%
             </span>
           </div>
           <input type="hidden" name="installments" value={JSON.stringify(installments)} />
           {installments.map((row, index) => (
-            <div key={`installment-${index}`} className="border rounded p-2 mb-2">
-              <div className="row g-2">
-                <div className="col-md-3">
-                  <label className="form-label mb-1">Label</label>
-                  <input
-                    className="form-control form-control-sm"
+            <div
+              key={`installment-${index}`}
+              className="rounded-lg border border-slate-200 p-3"
+            >
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-12">
+                <div className="space-y-1 lg:col-span-3">
+                  <Label className="text-xs">Label</Label>
+                  <Input
+                    className="h-8 text-xs"
                     value={row.label ?? ""}
                     onChange={(e) => updateInstallment(index, { label: e.target.value })}
                     placeholder="DP / Termin 2"
                   />
                 </div>
-                <div className="col-md-2">
-                  <label className="form-label mb-1">%</label>
-                  <input
+                <div className="space-y-1 lg:col-span-2">
+                  <Label className="text-xs">%</Label>
+                  <Input
                     type="number"
                     min={0}
                     max={100}
                     step={0.01}
-                    className="form-control form-control-sm"
+                    className="h-8 text-xs"
                     value={row.percentage}
                     onChange={(e) =>
                       updateInstallment(index, { percentage: Number(e.target.value) })
                     }
                   />
                 </div>
-                <div className="col-md-2">
-                  <label className="form-label mb-1">Amount</label>
-                  <input
+                <div className="space-y-1 lg:col-span-2">
+                  <Label className="text-xs">Amount</Label>
+                  <Input
                     type="number"
                     min={0}
                     step={1}
-                    className="form-control form-control-sm"
+                    className="h-8 text-xs"
                     value={row.amount ?? ""}
                     onChange={(e) =>
                       updateInstallment(index, {
@@ -131,32 +147,36 @@ export function PaymentTermSection({
                     }
                   />
                 </div>
-                <div className="col-md-3">
-                  <label className="form-label mb-1">Due Date</label>
-                  <input
+                <div className="space-y-1 lg:col-span-3">
+                  <Label className="text-xs">Due Date</Label>
+                  <Input
                     type="date"
-                    className="form-control form-control-sm"
+                    className="h-8 text-xs"
                     value={row.dueDate}
                     onChange={(e) => updateInstallment(index, { dueDate: e.target.value })}
                     required
                   />
                 </div>
-                <div className="col-md-2 d-flex align-items-end">
-                  <button
+                <div className="flex items-end lg:col-span-2">
+                  <Button
                     type="button"
-                    className="btn btn-outline-danger btn-sm w-100"
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-red-200 text-red-600 hover:bg-red-50"
                     onClick={() =>
-                      setInstallments((current) => current.filter((_, rowIndex) => rowIndex !== index))
+                      setInstallments((current) =>
+                        current.filter((_, rowIndex) => rowIndex !== index),
+                      )
                     }
                     disabled={installments.length <= 1}
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
-                <div className="col-12">
-                  <label className="form-label mb-1">Notes</label>
-                  <input
-                    className="form-control form-control-sm"
+                <div className="space-y-1 sm:col-span-2 lg:col-span-12">
+                  <Label className="text-xs">Notes</Label>
+                  <Input
+                    className="h-8 text-xs"
                     value={row.notes ?? ""}
                     onChange={(e) => updateInstallment(index, { notes: e.target.value })}
                   />
@@ -164,13 +184,14 @@ export function PaymentTermSection({
               </div>
             </div>
           ))}
-          <button
+          <Button
             type="button"
-            className="btn btn-outline-secondary btn-sm"
+            variant="outline"
+            size="sm"
             onClick={() => setInstallments((current) => [...current, emptyInstallment()])}
           >
             + Add Installment
-          </button>
+          </Button>
         </div>
       )}
 

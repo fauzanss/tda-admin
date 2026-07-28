@@ -4,15 +4,19 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { deleteCompanyById } from "@/app/admin/settings/company/actions";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 export function DeleteCompanyButton({ id }: { id: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   return (
-    <button
+    <Button
       type="button"
-      className="btn btn-sm btn-outline-danger"
+      variant="outline"
+      size="sm"
+      className="border-red-200 text-red-700 hover:bg-red-50"
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
@@ -26,7 +30,14 @@ export function DeleteCompanyButton({ id }: { id: string }) {
         });
       }}
     >
-      {isPending ? "Deleting..." : "Delete"}
-    </button>
+      {isPending ? (
+        <>
+          <Spinner size={14} className="text-current" />
+          Deleting...
+        </>
+      ) : (
+        "Delete"
+      )}
+    </Button>
   );
 }
