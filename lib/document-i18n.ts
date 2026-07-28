@@ -1,4 +1,4 @@
-import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType, SphOfferKind } from "@/generated/prisma/client";
 
 export type { DocumentLocale };
 
@@ -47,6 +47,7 @@ export type DocumentStrings = {
   offerNotes: string;
   additionalInformation: string;
   sphClosing: string;
+  sphClosingService: string;
   sender: string;
   receiver: string;
   name: string;
@@ -109,6 +110,8 @@ const sharedEn: Omit<
   additionalInformation: "Additional Information",
   sphClosing:
     "We appreciate your consideration and look forward to the opportunity to work together on this procurement. Thank you for your attention and cooperation.",
+  sphClosingService:
+    "We appreciate your consideration and look forward to the opportunity to work together on this service. Thank you for your attention and cooperation.",
   sender: "Sender",
   receiver: "Receiver",
   name: "Name",
@@ -150,6 +153,8 @@ const sharedId: typeof sharedEn = {
   additionalInformation: "Informasi Tambahan",
   sphClosing:
     "Kami menghargai pertimbangan Anda dan berharap dapat bekerja sama dalam pengadaan ini. Terima kasih atas perhatian dan kerja samanya.",
+  sphClosingService:
+    "Kami menghargai pertimbangan Anda dan berharap dapat bekerja sama dalam jasa ini. Terima kasih atas perhatian dan kerja samanya.",
   sender: "Pengirim",
   receiver: "Penerima",
   name: "Nama",
@@ -248,4 +253,12 @@ export function getDocumentStrings(
   type: DocumentType,
 ): DocumentStrings {
   return buildStrings(locale ?? "ID", type);
+}
+
+export function getSphClosingText(
+  locale: DocumentLocale | null | undefined,
+  offerKind: SphOfferKind | null | undefined,
+) {
+  const strings = getDocumentStrings(locale, "SPH");
+  return offerKind === "SERVICE" ? strings.sphClosingService : strings.sphClosing;
 }

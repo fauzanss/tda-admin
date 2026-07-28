@@ -6,6 +6,7 @@ import {
   DocumentType,
   PaymentTermType,
   Prisma,
+  SphOfferKind,
 } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -53,6 +54,7 @@ const formSchema = z.object({
   salesPerson: z.string().optional(),
   taxId: z.string().optional(),
   paymentTerms: z.string().optional(),
+  offerKind: z.enum(["PROCUREMENT", "SERVICE"]).optional(),
   deliveryNotes: z.string().optional(),
   billToName: z.string().optional(),
   billToAddress: z.string().optional(),
@@ -96,6 +98,7 @@ function buildDocumentInput(formData: FormData) {
     salesPerson: String(formData.get("salesPerson") ?? ""),
     taxId: String(formData.get("taxId") ?? ""),
     paymentTerms: String(formData.get("paymentTerms") ?? ""),
+    offerKind: String(formData.get("offerKind") ?? "PROCUREMENT") || "PROCUREMENT",
     deliveryNotes: String(formData.get("deliveryNotes") ?? ""),
     billToName: String(formData.get("billToName") ?? ""),
     billToAddress: String(formData.get("billToAddress") ?? ""),
@@ -139,6 +142,7 @@ function buildDocumentInput(formData: FormData) {
     salesPerson: toNullable(payload.salesPerson),
     taxId: toNullable(payload.taxId),
     paymentTerms: toNullable(payload.paymentTerms),
+    offerKind: (payload.offerKind ?? "PROCUREMENT") as SphOfferKind,
     deliveryNotes: toNullable(payload.deliveryNotes),
     billToName: toNullable(payload.billToName),
     billToAddress: toNullable(payload.billToAddress),
@@ -286,7 +290,7 @@ async function createByType(input: DocumentInput, userId: string) {
 
   return prisma.sph.create({
     data: {
-      status: DocumentStatus.DRAFT,
+      status: DocumentStatus.FINAL,
       locale: input.locale,
       documentNumber: input.documentNumber,
       issueDate: input.issueDate,
@@ -301,6 +305,7 @@ async function createByType(input: DocumentInput, userId: string) {
             }
           : Prisma.JsonNull,
       paymentTerms: input.paymentTerms,
+      offerKind: input.offerKind,
       salesPerson: input.salesPerson,
       withSignature: input.withSignature,
       createdById: userId,
@@ -310,11 +315,33 @@ async function createByType(input: DocumentInput, userId: string) {
   });
 }
 
+async function resolveSphDocumentNumber(
+  existing: string | null | undefined,
+  issueDate: Date,
+) {
+  const trimmed = existing?.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  return generateDocumentNumber("SPH", issueDate);
+}
+
 export async function createDocument(formData: FormData) {
   const userId = await requireFileEditor();
   const input = buildDocumentInput(formData);
 
-  const document = await createByType(input, userId);
+  const createInput =
+    input.type === "SPH"
+      ? {
+          ...input,
+          documentNumber: await resolveSphDocumentNumber(
+            input.documentNumber,
+            input.issueDate,
+          ),
+        }
+      : input;
+
+  const document = await createByType(createInput, userId);
 
   if (input.type === "PURCHASE_ORDER") {
     const lineTotal = sumLineItemsTotal(input.lines);
@@ -408,11 +435,16 @@ export async function updateDocument(documentId: string, formData: FormData) {
     if (!current) {
       throw new Error("Document not found or deleted");
     }
+    const documentNumber = await resolveSphDocumentNumber(
+      current.documentNumber ?? input.documentNumber,
+      input.issueDate,
+    );
     await prisma.sph.update({
       where: { id: documentId },
       data: {
+        status: DocumentStatus.FINAL,
         locale: input.locale,
-        documentNumber: input.documentNumber,
+        documentNumber,
         issueDate: input.issueDate,
         subject: input.subject,
         recipientName: input.billToName,
@@ -425,6 +457,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
               }
             : Prisma.JsonNull,
         paymentTerms: input.paymentTerms,
+        offerKind: input.offerKind,
         salesPerson: input.salesPerson,
         withSignature: input.withSignature,
         items: { deleteMany: {}, create: input.lines },
@@ -471,9 +504,7 @@ export async function finalizeDocument(type: DocumentType, id: string) {
     const doc = await prisma.sph.findFirstOrThrow({ where: { id, ...notDeleted } });
     const number =
       doc.documentNumber ??
-      (await generateDocumentNumber("SPH", doc.issueDate, {
-        clientName: doc.recipientCompany ?? doc.recipientName,
-      }));
+      (await generateDocumentNumber("SPH", doc.issueDate));
     await prisma.sph.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   }
 
@@ -667,6 +698,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       recipientCompany: source.recipientCompany,
       notes: source.notes ?? Prisma.JsonNull,
       paymentTerms: source.paymentTerms,
+      offerKind: source.offerKind,
       salesPerson: source.salesPerson,
       withSignature: source.withSignature,
       createdById: userId,

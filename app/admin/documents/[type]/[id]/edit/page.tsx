@@ -119,6 +119,7 @@ export default async function EditDocumentPage({
     salesPerson: "salesPerson" in document ? document.salesPerson ?? null : null,
     taxId: "taxId" in document ? document.taxId ?? null : null,
     paymentTerms: "paymentTerms" in document ? document.paymentTerms ?? null : null,
+    offerKind: "offerKind" in document ? document.offerKind : undefined,
     deliveryNotes: "deliveryNotes" in document ? document.deliveryNotes ?? null : null,
     billToName:
       "billToName" in document
@@ -154,7 +155,7 @@ export default async function EditDocumentPage({
     <main>
       {resolvedSearchParams.updated === "1" && (
         <div className="alert alert-success py-2 mb-3" role="alert">
-          Draft updated successfully.
+          {type === "SPH" ? "Quotation updated successfully." : "Draft updated successfully."}
         </div>
       )}
       <div className="d-flex align-items-center justify-content-between mb-3">
@@ -168,11 +169,13 @@ export default async function EditDocumentPage({
           >
             Preview
           </Link>
-          <form action={onFinalize}>
-            <button className="btn btn-success btn-sm" type="submit">
-              Finalize
-            </button>
-          </form>
+          {type !== "SPH" && (
+            <form action={onFinalize}>
+              <button className="btn btn-success btn-sm" type="submit">
+                Finalize
+              </button>
+            </form>
+          )}
         </div>
       </div>
       <DocumentForm
@@ -183,7 +186,7 @@ export default async function EditDocumentPage({
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}
         onSubmit={onSubmit}
-        submitLabel="Update Draft"
+        submitLabel={type === "SPH" ? "Save" : "Update Draft"}
       />
     </main>
   );

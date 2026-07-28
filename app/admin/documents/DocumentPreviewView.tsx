@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import { PrintButton } from "@/app/admin/documents/PrintButton";
 import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
-import { getDocumentStrings } from "@/lib/document-i18n";
+import { getDocumentStrings, getSphClosingText } from "@/lib/document-i18n";
 import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
 import { formatCurrency, formatCurrencyAmount, formatLongDate, parseNotes } from "@/lib/documents";
@@ -175,6 +175,7 @@ export async function DocumentPreviewView({
   const fromName = "fromName" in document ? document.fromName : null;
   const fromAddress = "fromAddress" in document ? document.fromAddress : null;
   const paymentTerms = "paymentTerms" in document ? document.paymentTerms : null;
+  const offerKind = "offerKind" in document ? document.offerKind : null;
   const deliveryNotes = "deliveryNotes" in document ? document.deliveryNotes : null;
   const salesPerson = "salesPerson" in document ? document.salesPerson : null;
   const withSignature = "withSignature" in document ? document.withSignature : true;
@@ -436,7 +437,7 @@ export async function DocumentPreviewView({
 
         {type === "SPH" && (
           <div className="doc-section">
-            <p>{t.sphClosing}</p>
+            <p>{getSphClosingText(locale, offerKind)}</p>
           </div>
         )}
 

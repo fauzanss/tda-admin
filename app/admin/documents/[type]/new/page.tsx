@@ -90,7 +90,7 @@ export default async function NewDocumentPage({
         purchaseOrders={purchaseOrders}
         suratJalans={suratJalans}
         onSubmit={onSubmit}
-        submitLabel="Save Draft"
+        submitLabel={type === "SPH" ? "Save" : "Save Draft"}
       />
     </main>
   );

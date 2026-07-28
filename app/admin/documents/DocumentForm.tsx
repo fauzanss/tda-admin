@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentLocale, DocumentType, PaymentTermType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType, PaymentTermType, SphOfferKind } from "@/generated/prisma/client";
 import { useState } from "react";
 
 import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
@@ -70,6 +70,7 @@ type DocumentWithLines = {
   taxId: string | null;
   paymentTerms: string | null;
   paymentTermType?: PaymentTermType;
+  offerKind?: SphOfferKind;
   installments?: InstallmentInput[];
   linkedPoMasukIds?: string[];
   gdriveWebViewLink?: string | null;
@@ -319,7 +320,36 @@ export function DocumentForm({
             defaultValue={defaultValue?.dueDate ? defaultValue.dueDate.toISOString().slice(0, 10) : ""}
           />
         )}
-        <Field name="documentNumber" label="Document Number (optional for draft)" defaultValue={defaultValue?.documentNumber ?? ""} />
+        {isSph ? (
+          defaultValue?.documentNumber ? (
+            <div className="col-12 col-md-6">
+              <label className="form-label">Document Number</label>
+              <input
+                className="form-control"
+                value={defaultValue.documentNumber}
+                readOnly
+                disabled
+              />
+              <input type="hidden" name="documentNumber" value={defaultValue.documentNumber} />
+            </div>
+          ) : (
+            <div className="col-12 col-md-6">
+              <label className="form-label">Document Number</label>
+              <input
+                className="form-control"
+                value="Auto-generated on save"
+                readOnly
+                disabled
+              />
+            </div>
+          )
+        ) : (
+          <Field
+            name="documentNumber"
+            label="Document Number (optional for draft)"
+            defaultValue={defaultValue?.documentNumber ?? ""}
+          />
+        )}
         {isInvoice && (
           <div className="col-12 col-md-6">
             <label className="form-label">Select PO Reference</label>
@@ -528,14 +558,27 @@ export function DocumentForm({
 
       <div className="row g-3 mb-3">
         {isSph && (
-          <div className="col-12">
-            <label className="form-label">Subject</label>
-            <input
-              name="subject"
-              className="form-control"
-              defaultValue={defaultValue?.subject ?? ""}
-            />
-          </div>
+          <>
+            <div className="col-12 col-md-6">
+              <label className="form-label">Offer Kind</label>
+              <select
+                name="offerKind"
+                className="form-select"
+                defaultValue={defaultValue?.offerKind ?? "PROCUREMENT"}
+              >
+                <option value="PROCUREMENT">Pengadaan (Procurement)</option>
+                <option value="SERVICE">Jasa (Service)</option>
+              </select>
+            </div>
+            <div className="col-12">
+              <label className="form-label">Subject</label>
+              <input
+                name="subject"
+                className="form-control"
+                defaultValue={defaultValue?.subject ?? ""}
+              />
+            </div>
+          </>
         )}
       </div>
 

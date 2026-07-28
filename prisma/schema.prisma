@@ -34,6 +34,11 @@ enum PaymentTermType {
   TERMIN
 }
 
+enum SphOfferKind {
+  PROCUREMENT
+  SERVICE
+}
+
 enum UserRole {
   ADMIN
   STAFF
@@ -272,6 +277,7 @@ model Sph {
   recipientCompany String?
   notes          Json?
   paymentTerms   String?        @db.Text
+  offerKind      SphOfferKind   @default(PROCUREMENT)
   salesPerson    String?
   withSignature  Boolean        @default(true)
   createdById    String
