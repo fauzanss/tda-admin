@@ -8,6 +8,7 @@ export default async function EmailInboxPage({
     folder?: string;
     page?: string;
     sent?: string;
+    q?: string;
   }>;
 }>) {
   const resolved = (await searchParams) ?? {};

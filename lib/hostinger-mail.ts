@@ -4,6 +4,7 @@ import {
   FoldersApi,
   MessagesApi,
   SendApi,
+  type V1FolderMessagesSearchRequest,
   type V1SendRequest,
 } from "hostinger-mail-api-sdk";
 
@@ -167,6 +168,69 @@ export async function listMailMessages(
         date: message.date,
         unseen: message.unseen,
       })),
+      pagination: {
+        page: pagination?.page ?? page,
+        perPage: pagination?.perPage ?? perPage,
+        total: pagination?.total ?? 0,
+        totalPages: pagination?.totalPages ?? 1,
+      },
+    };
+  } catch (error) {
+    throw new Error(formatMailApiError(error));
+  }
+}
+
+function mapMailMessageSummaries(
+  messages: Array<{
+    uid: number;
+    subject: string | null;
+    from?: { name?: string; address?: string } | null;
+    to?: Array<{ name?: string; address?: string }>;
+    date: string;
+    unseen: boolean;
+  }>,
+): MailMessageSummary[] {
+  return messages.map((message) => ({
+    uid: message.uid,
+    subject: message.subject,
+    fromName: message.from?.name ?? "",
+    fromAddress: message.from?.address ?? "",
+    toName: message.to?.[0]?.name ?? "",
+    toAddress: message.to?.[0]?.address ?? "",
+    date: message.date,
+    unseen: message.unseen,
+  }));
+}
+
+export async function searchMailMessages(
+  mailboxResourceId: string,
+  folder: string,
+  query: string,
+  page = 1,
+  perPage = 25,
+): Promise<{ messages: MailMessageSummary[]; pagination: MailPagination }> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return listMailMessages(mailboxResourceId, folder, page, perPage);
+  }
+
+  try {
+    const api = new MessagesApi(getMailConfiguration());
+    // Hostinger docs: all search fields optional; combining fields narrows results (AND).
+    const criteria = {
+      text: trimmed,
+    } as unknown as V1FolderMessagesSearchRequest;
+    const { data } = await api.searchMessages(
+      mailboxResourceId,
+      folder,
+      page,
+      perPage,
+      "-date",
+      criteria,
+    );
+    const pagination = data.pagination;
+    return {
+      messages: mapMailMessageSummaries(data.data ?? []),
       pagination: {
         page: pagination?.page ?? page,
         perPage: pagination?.perPage ?? perPage,

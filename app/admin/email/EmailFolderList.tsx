@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { PenSquare } from "lucide-react";
+import { PenSquare, Search, X } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import {
@@ -22,6 +23,7 @@ import {
   listMailFolders,
   listMailMessages,
   listMailboxes,
+  searchMailMessages,
 } from "@/lib/hostinger-mail";
 import { formatAppMailDateTime } from "@/lib/datetime";
 import { cn } from "@/lib/cn";
@@ -34,11 +36,14 @@ function formatParty(name: string, address: string) {
 
 function buildListHref(
   basePath: string,
-  params: { mailbox: string; folder: string; page?: number },
+  params: { mailbox: string; folder: string; page?: number; q?: string },
 ) {
   const search = new URLSearchParams();
   search.set("mailbox", params.mailbox);
   search.set("folder", params.folder);
+  if (params.q?.trim()) {
+    search.set("q", params.q.trim());
+  }
   if (params.page && params.page > 1) {
     search.set("page", String(params.page));
   }
@@ -55,12 +60,14 @@ export async function EmailFolderList({
     folder?: string;
     page?: string;
     sent?: string;
+    q?: string;
   };
 }) {
   const resolved = searchParams ?? {};
   const basePath = mode === "sent" ? "/admin/email/sent" : "/admin/email";
   const title = mode === "sent" ? "Sent" : "Inbox";
   const partyColumn = mode === "sent" ? "To" : "From";
+  const query = resolved.q?.trim() ?? "";
 
   if (!isMailApiConfigured()) {
     return (
@@ -120,7 +127,9 @@ export async function EmailFolderList({
 
   if (!folderError) {
     try {
-      const result = await listMailMessages(mailbox, folder, page, 25);
+      const result = query
+        ? await searchMailMessages(mailbox, folder, query, page, 25)
+        : await listMailMessages(mailbox, folder, page, 25);
       messages = result.messages;
       pagination = result.pagination;
     } catch (error) {
@@ -161,38 +170,80 @@ export async function EmailFolderList({
 
       <Card className="mb-4">
         <CardBody>
-          <form
-            method="get"
-            action={basePath}
-            className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end"
-          >
-            <div>
-              <Label htmlFor="mailbox">Mailbox</Label>
-              <Select id="mailbox" name="mailbox" defaultValue={mailbox}>
-                {mailboxes.map((item) => (
-                  <option key={item.resourceId} value={item.resourceId}>
-                    {item.address}
-                  </option>
-                ))}
-              </Select>
+          <form method="get" action={basePath} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+              <div>
+                <Label htmlFor="mailbox">Mailbox</Label>
+                <Select id="mailbox" name="mailbox" defaultValue={mailbox}>
+                  {mailboxes.map((item) => (
+                    <option key={item.resourceId} value={item.resourceId}>
+                      {item.address}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="folder">Folder</Label>
+                <Select id="folder" name="folder" defaultValue={folder}>
+                  {folders.length === 0 && <option value={folder}>{folder}</option>}
+                  {folders.map((item) => (
+                    <option key={item.path} value={item.path}>
+                      {item.name} ({item.unreadCount}/{item.messageCount})
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <Button type="submit" variant="outline" className="w-full md:w-auto">
+                Open
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="folder">Folder</Label>
-              <Select id="folder" name="folder" defaultValue={folder}>
-                {folders.length === 0 && <option value={folder}>{folder}</option>}
-                {folders.map((item) => (
-                  <option key={item.path} value={item.path}>
-                    {item.name} ({item.unreadCount}/{item.messageCount})
-                  </option>
-                ))}
-              </Select>
+
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+              <div>
+                <Label htmlFor="q">Search</Label>
+                <div className="relative">
+                  <Search
+                    size={14}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    aria-hidden
+                  />
+                  <Input
+                    id="q"
+                    name="q"
+                    type="search"
+                    defaultValue={query}
+                    placeholder="Search subject, sender, body..."
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full sm:w-auto">
+                <Search size={14} aria-hidden />
+                Search
+              </Button>
+              {query ? (
+                <Link
+                  href={buildListHref(basePath, { mailbox, folder })}
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "inline-flex w-full sm:w-auto",
+                  )}
+                >
+                  <X size={14} aria-hidden />
+                  Clear
+                </Link>
+              ) : null}
             </div>
-            <Button type="submit" variant="outline" className="w-full md:w-auto">
-              Open
-            </Button>
           </form>
         </CardBody>
       </Card>
+
+      {query ? (
+        <p className="mb-3 text-sm text-tda-navy-muted">
+          Showing results for <span className="font-medium text-tda-navy">&quot;{query}&quot;</span>
+          {pagination.total > 0 ? ` · ${pagination.total} found` : null}
+        </p>
+      ) : null}
 
       <Card>
         <Table>
@@ -207,7 +258,9 @@ export async function EmailFolderList({
             {messages.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} className="text-tda-navy-muted">
-                  No messages in this folder.
+                  {query
+                    ? "No messages match this search."
+                    : "No messages in this folder."}
                 </TableCell>
               </TableRow>
             )}
@@ -262,6 +315,7 @@ export async function EmailFolderList({
                 href={buildListHref(basePath, {
                   mailbox,
                   folder,
+                  q: query,
                   page: pagination.page - 1,
                 })}
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
@@ -274,6 +328,7 @@ export async function EmailFolderList({
                 href={buildListHref(basePath, {
                   mailbox,
                   folder,
+                  q: query,
                   page: pagination.page + 1,
                 })}
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
