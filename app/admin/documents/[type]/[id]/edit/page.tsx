@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { finalizeDocument, updateDocument } from "@/app/admin/documents/actions";
+import { convertPerformInvoiceToInvoice, finalizeDocument, updateDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -9,7 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { documentTypeLabels } from "@/lib/document-meta";
-import { getDocumentListPath, getDocumentPreviewPath } from "@/lib/document-paths";
+import { getDocumentEditPath, getDocumentListPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { authOptions } from "@/lib/auth";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
@@ -89,6 +89,11 @@ export default async function EditDocumentPage({
           where: { id: resolved.id, ...notDeleted },
           include: { items: { orderBy: { sortOrder: "asc" } } },
         })
+      : type === "PERFORM_INVOICE"
+        ? await prisma.performInvoice.findFirstOrThrow({
+            where: { id: resolved.id, ...notDeleted },
+            include: { items: { orderBy: { sortOrder: "asc" } } },
+          })
       : type === "SURAT_JALAN"
         ? await prisma.suratJalan.findFirstOrThrow({
             where: { id: resolved.id, ...notDeleted },
@@ -107,6 +112,11 @@ export default async function EditDocumentPage({
   async function onFinalize() {
     "use server";
     await finalizeDocument(type, document.id);
+  }
+
+  async function onConvertToInvoice() {
+    "use server";
+    await convertPerformInvoiceToInvoice(document.id);
   }
 
   const defaultValue = {
@@ -147,12 +157,14 @@ export default async function EditDocumentPage({
     toAddress: "toAddress" in document ? document.toAddress ?? null : null,
     subject: "subject" in document ? document.subject ?? null : null,
     notes: "notes" in document ? document.notes : null,
+    poMasukId: "poMasukId" in document ? document.poMasukId ?? null : null,
     lines: document.items.map((line) => ({
       description: line.description,
       detail: line.detail ?? null,
       quantity: Number(line.quantity),
       unit: line.unit ?? null,
       unitPrice: Number(line.unitPrice),
+      taxable: "taxable" in line ? Boolean(line.taxable) : true,
     })),
   };
 
@@ -160,7 +172,9 @@ export default async function EditDocumentPage({
     <main>
       {resolvedSearchParams.updated === "1" && (
         <Alert variant="success" className="mb-4">
-          {type === "SPH" ? "Quotation updated successfully." : "Draft updated successfully."}
+          {type === "SPH" || type === "PERFORM_INVOICE"
+            ? "Document updated successfully."
+            : "Draft updated successfully."}
         </Alert>
       )}
       <PageHeader
@@ -173,7 +187,25 @@ export default async function EditDocumentPage({
             >
               Preview
             </Link>
-            {type !== "SPH" && (
+            {type === "PERFORM_INVOICE" &&
+              (!("convertedToInvoiceId" in document) || !document.convertedToInvoiceId) && (
+              <form action={onConvertToInvoice}>
+                <SubmitButton variant="secondary" size="sm" pendingLabel="Converting...">
+                  Convert to Invoice
+                </SubmitButton>
+              </form>
+            )}
+            {type === "PERFORM_INVOICE" &&
+              "convertedToInvoiceId" in document &&
+              document.convertedToInvoiceId && (
+              <Link
+                href={getDocumentEditPath("INVOICE", document.convertedToInvoiceId)}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                Open Invoice
+              </Link>
+            )}
+            {type !== "SPH" && type !== "PERFORM_INVOICE" && (
               <form action={onFinalize}>
                 <SubmitButton variant="secondary" size="sm" pendingLabel="Finalizing...">
                   Finalize
@@ -191,7 +223,7 @@ export default async function EditDocumentPage({
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}
         onSubmit={onSubmit}
-        submitLabel={type === "SPH" ? "Save" : "Update Draft"}
+        submitLabel={type === "SPH" || type === "PERFORM_INVOICE" ? "Save" : "Update Draft"}
       />
     </main>
   );

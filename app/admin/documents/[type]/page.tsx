@@ -30,7 +30,7 @@ import { authOptions } from "@/lib/auth";
 import { formatAppDateTime, formatAppLongDate } from "@/lib/datetime";
 
 function getCompanyName(
-  type: "INVOICE" | "SURAT_JALAN" | "SPH",
+  type: "INVOICE" | "PERFORM_INVOICE" | "SURAT_JALAN" | "SPH",
   doc: {
     billToName?: string | null;
     orderToName?: string | null;
@@ -38,7 +38,7 @@ function getCompanyName(
     recipientCompany?: string | null;
   },
 ) {
-  if (type === "INVOICE") return doc.billToName ?? "-";
+  if (type === "INVOICE" || type === "PERFORM_INVOICE") return doc.billToName ?? "-";
   if (type === "SURAT_JALAN") return doc.toName ?? "-";
   return doc.recipientCompany ?? "-";
 }
@@ -58,6 +58,8 @@ export default async function DocumentListPage({
   let documents;
   if (type === "INVOICE") {
     documents = await prisma.invoice.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
+  } else if (type === "PERFORM_INVOICE") {
+    documents = await prisma.performInvoice.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
   } else if (type === "SURAT_JALAN") {
     documents = await prisma.suratJalan.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
   } else {

@@ -58,12 +58,12 @@ export default withAuth(
     }
 
     if (!canWriteFiles(role)) {
-      if (pathname.match(/\/admin\/documents\/(SPH|SURAT_JALAN|INVOICE)\/[^/]+\/new$/)) {
+      if (pathname.match(/\/admin\/documents\/(SPH|SURAT_JALAN|INVOICE|PERFORM_INVOICE)\/[^/]+\/new$/)) {
         const t = pathname.split("/")[3];
         return NextResponse.redirect(new URL(`/admin/documents/${t}`, req.nextUrl));
       }
       const editMatch = pathname.match(
-        /^\/admin\/documents\/(SPH|SURAT_JALAN|INVOICE)\/([^/]+)\/edit$/,
+        /^\/admin\/documents\/(SPH|SURAT_JALAN|INVOICE|PERFORM_INVOICE)\/([^/]+)\/edit$/,
       );
       if (editMatch) {
         return NextResponse.redirect(new URL(`/admin/documents/${editMatch[1]}`, req.nextUrl));

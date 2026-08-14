@@ -24,6 +24,7 @@ import { isAdminRole } from "@/lib/role-guards";
 
 const fileLinks = [
   { href: "/admin/documents/SPH", label: "Quotation", icon: FileText },
+  { href: "/admin/documents/PERFORM_INVOICE", label: "Perform Invoice", icon: FileText },
   { href: "/admin/documents/SURAT_JALAN", label: "Delivery Note", icon: Truck },
   { href: "/admin/documents/INVOICE", label: "Invoice", icon: FileText },
 ];

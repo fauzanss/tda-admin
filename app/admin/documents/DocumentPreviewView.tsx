@@ -75,7 +75,7 @@ function renderDetail(type: string, detail?: string | null) {
 }
 
 function documentNumberLabel(type: DocumentType, t: ReturnType<typeof getDocumentStrings>) {
-  if (type === "INVOICE") {
+  if (type === "INVOICE" || type === "PERFORM_INVOICE") {
     return t.invoiceNo;
   }
   if (type === "PURCHASE_ORDER") {
@@ -101,6 +101,11 @@ export async function DocumentPreviewView({
           where: { id, ...notDeleted },
           include: { items: { orderBy: { sortOrder: "asc" } } },
         })
+      : type === "PERFORM_INVOICE"
+        ? await prisma.performInvoice.findFirstOrThrow({
+            where: { id, ...notDeleted },
+            include: { items: { orderBy: { sortOrder: "asc" } } },
+          })
       : type === "PURCHASE_ORDER"
         ? await prisma.purchaseOrder.findFirstOrThrow({
             where: { id, ...notDeleted },
@@ -188,9 +193,22 @@ export async function DocumentPreviewView({
   const poSubtotal = type === "PURCHASE_ORDER" ? total : 0;
   const poPpn = poSubtotal * 0.11;
   const poGrandTotal = poSubtotal + poPpn;
-  const invoiceSubtotal = type === "INVOICE" ? total : 0;
+  const invoiceSubtotal = type === "INVOICE" || type === "PERFORM_INVOICE"
+    ? lines.reduce((sum, line) => {
+        const taxable = "taxable" in line ? line.taxable !== false : true;
+        if (!taxable) return sum;
+        return sum + Number(line.quantity) * Number(line.unitPrice);
+      }, 0)
+    : 0;
+  const invoiceNonTaxable = type === "INVOICE" || type === "PERFORM_INVOICE"
+    ? lines.reduce((sum, line) => {
+        const taxable = "taxable" in line ? line.taxable !== false : true;
+        if (taxable) return sum;
+        return sum + Number(line.quantity) * Number(line.unitPrice);
+      }, 0)
+    : 0;
   const invoicePpn = invoiceSubtotal * 0.11;
-  const invoiceGrandTotal = invoiceSubtotal + invoicePpn;
+  const invoiceGrandTotal = invoiceSubtotal + invoicePpn + invoiceNonTaxable;
   const sphPartnerName = (deliveredToName || "Netciti").trim();
   const previewUrl = await getRequestUrlForPath(getDocumentPreviewPath(type, id));
   const qrDataUrl = await getDocumentQrDataUrl(previewUrl);
@@ -201,7 +219,7 @@ export async function DocumentPreviewView({
         <PrintButton />
       </Suspense>
       <article
-        className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
+        className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "PERFORM_INVOICE" ? " doc-preview--perform-invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
         data-doc-locale={locale}
       >
         <div className="letterhead">
@@ -241,15 +259,15 @@ export async function DocumentPreviewView({
             </div>
           )}
           {referenceBastSjNumber && <div className="info-row"><span className="info-label">{t.bastSjNo}</span><span className="info-value">: {referenceBastSjNumber}</span></div>}
-          {poTaxId && (type === "INVOICE" || type === "PURCHASE_ORDER") && <div className="info-row"><span className="info-label">{t.taxId}</span><span className="info-value">: {poTaxId}</span></div>}
+          {poTaxId && (type === "INVOICE" || type === "PERFORM_INVOICE" || type === "PURCHASE_ORDER") && <div className="info-row"><span className="info-label">{t.taxId}</span><span className="info-value">: {poTaxId}</span></div>}
           {subject && <div className="info-row"><span className="info-label">{t.subject}</span><span className="info-value">: {subject}</span></div>}
         </div>
 
-        {(type === "INVOICE" || type === "PURCHASE_ORDER" || type === "SURAT_JALAN") && (
+        {(type === "INVOICE" || type === "PERFORM_INVOICE" || type === "PURCHASE_ORDER" || type === "SURAT_JALAN") && (
           <div className="address-section">
             <div className="address-box">
               <div className="address-title">
-                {type === "INVOICE" ? t.billTo : type === "PURCHASE_ORDER" ? t.orderTo : t.sentFrom}
+                {type === "INVOICE" || type === "PERFORM_INVOICE" ? t.billTo : type === "PURCHASE_ORDER" ? t.orderTo : t.sentFrom}
               </div>
               {renderAddress(type === "SURAT_JALAN" ? fromName : billToName, type === "SURAT_JALAN" ? fromAddress : billToAddress)}
             </div>
@@ -364,7 +382,7 @@ export async function DocumentPreviewView({
               </tr>
             </tbody>
           </table>
-        ) : type === "INVOICE" ? (
+        ) : type === "INVOICE" || type === "PERFORM_INVOICE" ? (
           <table className="item-table doc-totals-table">
             <tbody>
               <tr>
@@ -379,6 +397,14 @@ export async function DocumentPreviewView({
                   {formatCurrency(invoicePpn, locale)}
                 </td>
               </tr>
+              {invoiceNonTaxable > 0 && (
+                <tr>
+                  <td style={{ fontWeight: "bold" }}>{t.nonTaxable}</td>
+                  <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                    {formatCurrency(invoiceNonTaxable, locale)}
+                  </td>
+                </tr>
+              )}
               <tr style={{ borderTop: "2px solid #2c3e50" }}>
                 <td style={{ fontWeight: "bold" }}>{t.totalOrder}</td>
                 <td style={{ textAlign: "right", fontWeight: "bold" }}>
@@ -416,7 +442,7 @@ export async function DocumentPreviewView({
           paymentTerms &&
           type !== "SURAT_JALAN" && (
             <div className="payment-info">
-              <div className="payment-title">{type === "INVOICE" ? t.paymentTransfer : t.paymentTerms}</div>
+              <div className="payment-title">{type === "INVOICE" || type === "PERFORM_INVOICE" ? t.paymentTransfer : t.paymentTerms}</div>
               {renderBulletLines(paymentTerms)}
             </div>
           )

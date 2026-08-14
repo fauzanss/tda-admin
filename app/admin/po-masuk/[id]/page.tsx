@@ -19,6 +19,7 @@ import {
   listOutgoingPoOptions,
   toInstallmentRows,
 } from "@/lib/po-payment";
+import { getDocumentNewPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -37,6 +38,11 @@ export default async function PoMasukDetailPage({
       where: { id, ...notDeleted },
       include: {
         installments: { orderBy: { sortOrder: "asc" } },
+        performInvoices: {
+          where: { ...notDeleted },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, documentNumber: true, status: true },
+        },
         purchaseOrderLinks: {
           include: {
             purchaseOrder: {
@@ -74,6 +80,14 @@ export default async function PoMasukDetailPage({
             >
               Back to list
             </Link>
+            {canWrite && (
+              <Link
+                href={`${getDocumentNewPath("PERFORM_INVOICE")}?poMasukId=${record.id}`}
+                className={buttonVariants({ size: "sm" })}
+              >
+                Create Perform Invoice
+              </Link>
+            )}
             {canWrite && <DeletePoMasukButton id={record.id} />}
           </>
         }
@@ -128,6 +142,25 @@ export default async function PoMasukDetailPage({
       </Card>
 
       <LinkedOutgoingPoPanel links={linkedOutgoing} />
+      {record.performInvoices.length > 0 && (
+        <Card className="mb-4">
+          <CardBody>
+            <h2 className="mb-3 text-lg font-semibold text-tda-navy">Perform Invoices</h2>
+            <ul className="space-y-2">
+              {record.performInvoices.map((pi) => (
+                <li key={pi.id}>
+                  <Link
+                    href={getDocumentPreviewPath("PERFORM_INVOICE", pi.id)}
+                    className="text-sm text-tda-navy underline-offset-4 hover:underline"
+                  >
+                    {pi.documentNumber ?? "(Unnumbered)"} ({pi.status})
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
       <InstallmentsPanel installments={installmentRows} canWrite={canWrite} />
 
       <GdriveFilePreviewPanel

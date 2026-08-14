@@ -37,6 +37,7 @@ export type DocumentStrings = {
   conditionGood: string;
   subtotal: string;
   ppn: string;
+  nonTaxable: string;
   totalPurchaseOrder: string;
   totalOrder: string;
   grandTotal: string;
@@ -105,6 +106,7 @@ const sharedEn: Omit<
   conditionGood: "Good",
   subtotal: "Subtotal",
   ppn: "PPN 11%",
+  nonTaxable: "Non-taxable",
   grandTotal: "Grand Total",
   offerNotes: "Offer Notes",
   additionalInformation: "Additional Information",
@@ -148,6 +150,7 @@ const sharedId: typeof sharedEn = {
   conditionGood: "Baik",
   subtotal: "Subtotal",
   ppn: "PPN 11%",
+  nonTaxable: "Tidak kena pajak",
   grandTotal: "Total Keseluruhan",
   offerNotes: "Catatan Penawaran",
   additionalInformation: "Informasi Tambahan",
@@ -180,6 +183,14 @@ function buildStrings(
     INVOICE: {
       documentTitle: locale === "EN" ? "INVOICE" : "FAKTUR",
       invoiceNo: locale === "EN" ? "Invoice No." : "No. Faktur",
+      billTo: locale === "EN" ? "Bill To" : "Ditagihkan Kepada",
+      deliveredTo: locale === "EN" ? "Delivered To" : "Dikirim Ke",
+      paymentTransfer: locale === "EN" ? "Payment Transfer to Account - IDR" : "Transfer Pembayaran ke Rekening - IDR",
+      totalOrder: locale === "EN" ? "Total Order" : "Total Pesanan",
+    },
+    PERFORM_INVOICE: {
+      documentTitle: locale === "EN" ? "PROFORMA INVOICE" : "FAKTUR PROFORMA",
+      invoiceNo: locale === "EN" ? "Proforma No." : "No. Proforma",
       billTo: locale === "EN" ? "Bill To" : "Ditagihkan Kepada",
       deliveredTo: locale === "EN" ? "Delivered To" : "Dikirim Ke",
       paymentTransfer: locale === "EN" ? "Payment Transfer to Account - IDR" : "Transfer Pembayaran ke Rekening - IDR",

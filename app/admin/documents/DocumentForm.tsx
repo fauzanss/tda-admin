@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/cn";
+import { defaultIdrPaymentTransfer } from "@/lib/document-meta";
 import type { InstallmentInput } from "@/lib/po-payment";
 
 type FormLine = {
@@ -24,6 +25,7 @@ type FormLine = {
   quantity: number;
   unit: string;
   unitPrice: number;
+  taxable: boolean;
 };
 
 function formatPriceInput(value: number) {
@@ -96,12 +98,14 @@ type DocumentWithLines = {
   toAddress: string | null;
   subject: string | null;
   notes: unknown;
+  poMasukId?: string | null;
   lines: Array<{
     description: string;
     detail: string | null;
     quantity: number;
     unit: string | null;
     unitPrice: number;
+    taxable?: boolean;
   }>;
 };
 
@@ -141,6 +145,7 @@ function emptyLine(): FormLine {
     quantity: 1,
     unit: "pcs",
     unitPrice: 0,
+    taxable: true,
   };
 }
 
@@ -172,6 +177,7 @@ export function DocumentForm({
       quantity: Number(line.quantity),
       unit: line.unit ?? "",
       unitPrice: Number(line.unitPrice),
+      taxable: line.taxable !== false,
     })) ?? [emptyLine()],
   );
   const [priceInputs, setPriceInputs] = useState<string[]>(
@@ -196,9 +202,11 @@ export function DocumentForm({
   }
 
   const isInvoice = type === "INVOICE";
+  const isPerformInvoice = type === "PERFORM_INVOICE";
   const isPo = type === "PURCHASE_ORDER";
   const isSuratJalan = type === "SURAT_JALAN";
   const isSph = type === "SPH";
+  const isInvoiceLike = isInvoice || isPerformInvoice;
   const sphNotes = extractSphNotes(defaultValue?.notes);
 
   function applyCompanyToFields(
@@ -281,6 +289,7 @@ export function DocumentForm({
         quantity: Number(item.quantity),
         unit: item.unit ?? "",
         unitPrice: Number(item.unitPrice),
+        taxable: true,
       }));
       setLines(mappedLines);
       setPriceInputs(mappedLines.map((item) => formatPriceInput(item.unitPrice)));
@@ -293,6 +302,9 @@ export function DocumentForm({
         <CardBody className="space-y-6">
           <input type="hidden" name="type" value={type} />
           <input type="hidden" name="lines" value={JSON.stringify(lines)} />
+          {defaultValue?.poMasukId && (
+            <input type="hidden" name="poMasukId" value={defaultValue.poMasukId} />
+          )}
           {duplicateInfo && (
             <Alert variant="info">
               Duplicated from document No: {duplicateInfo}
@@ -323,7 +335,7 @@ export function DocumentForm({
               </Select>
             </div>
             <Field name="issueDate" label="Document Date" type="date" defaultValue={defaultValue ? defaultValue.issueDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)} required />
-            {isInvoice && (
+            {isInvoiceLike && (
               <Field
                 name="dueDate"
                 label="Due Date"
@@ -331,7 +343,7 @@ export function DocumentForm({
                 defaultValue={defaultValue?.dueDate ? defaultValue.dueDate.toISOString().slice(0, 10) : ""}
               />
             )}
-            {isSph ? (
+            {isSph || isPerformInvoice ? (
               defaultValue?.documentNumber ? (
                 <div>
                   <Label>Document Number</Label>
@@ -379,7 +391,7 @@ export function DocumentForm({
                 </Select>
               </div>
             )}
-            {isInvoice && (
+            {isInvoiceLike && (
               <Field name="referencePoNumber" label="PO Reference" defaultValue={defaultValue?.referencePoNumber ?? ""} />
             )}
             {isInvoice && (
@@ -407,18 +419,18 @@ export function DocumentForm({
               </div>
             )}
             {isInvoice && (
-              <>
-                <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
-                <Field name="customerReference" label="Customer Reference" defaultValue={defaultValue?.customerReference ?? ""} />
-              </>
+              <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
+            )}
+            {isInvoiceLike && (
+              <Field name="customerReference" label="Customer Reference" defaultValue={defaultValue?.customerReference ?? ""} />
             )}
             {isPo && (
               <Field name="salesPerson" label="Sales Person" defaultValue={defaultValue?.salesPerson ?? ""} />
             )}
-            {(isInvoice || isPo) && <Field name="taxId" label="Tax ID" defaultValue={defaultValue?.taxId ?? ""} />}
+            {(isInvoiceLike || isPo) && <Field name="taxId" label="Tax ID" defaultValue={defaultValue?.taxId ?? ""} />}
           </div>
 
-          {(isInvoice || isPo) && (
+          {(isInvoiceLike || isPo) && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="bill-to-company-select">
@@ -577,8 +589,12 @@ export function DocumentForm({
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {(isInvoice) && (
-              <FormTextArea name="paymentTerms" label="Payment Terms" defaultValue={defaultValue?.paymentTerms ?? ""} />
+            {(isInvoiceLike) && (
+              <FormTextArea
+                name="paymentTerms"
+                label="Payment Transfer to Account - IDR"
+                defaultValue={defaultValue?.paymentTerms ?? defaultIdrPaymentTransfer}
+              />
             )}
             {isPo && (
               <>
@@ -700,6 +716,20 @@ export function DocumentForm({
                     disabled={isSuratJalan}
                   />
                 </div>
+                {isInvoiceLike && (
+                  <div className="mb-3">
+                    <Label className="mb-1 inline-flex items-center gap-2 font-normal">
+                      <input
+                        type="checkbox"
+                        checked={line.taxable}
+                        onChange={(event) =>
+                          updateLine(index, { taxable: event.target.checked })
+                        }
+                      />
+                      Subject to PPN 11%
+                    </Label>
+                  </div>
+                )}
                 <div className="flex justify-end">
                   <Button
                     type="button"

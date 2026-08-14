@@ -4,7 +4,7 @@ import { createDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { PageHeader } from "@/components/admin/PageHeader";
-import { documentTypeLabels } from "@/lib/document-meta";
+import { defaultIdrPaymentTransfer, documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentListPath } from "@/lib/document-paths";
 import { authOptions } from "@/lib/auth";
 import { canWriteFiles } from "@/lib/role-guards";
@@ -15,8 +15,10 @@ import { redirect } from "next/navigation";
 
 export default async function NewDocumentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ type: string }>;
+  searchParams?: Promise<{ poMasukId?: string }>;
 }) {
   const resolved = await params;
   const type = asDocumentType(resolved.type);
@@ -27,6 +29,11 @@ export default async function NewDocumentPage({
   if (!canWriteFiles(session?.user?.role as string | undefined)) {
     redirect(getDocumentListPath(type));
   }
+  const poMasukId = (await searchParams)?.poMasukId;
+  const incomingPo =
+    type === "PERFORM_INVOICE" && poMasukId
+      ? await prisma.poMasuk.findFirst({ where: { id: poMasukId, ...notDeleted } })
+      : null;
   const companies = await prisma.company.findMany({
     where: { isActive: true, ...notDeleted },
     orderBy: { companyName: "asc" },
@@ -82,6 +89,45 @@ export default async function NewDocumentPage({
     await createDocument(formData);
   }
 
+  const defaultValue =
+    incomingPo
+      ? {
+          locale: "ID" as const,
+          duplicatedFromNumber: null,
+          withSignature: true,
+          issueDate: incomingPo.issueDate ?? new Date(),
+          dueDate: null,
+          documentNumber: null,
+          referencePoNumber: incomingPo.poNumber ?? null,
+          referenceBastSjNumber: null,
+          customerReference: null,
+          salesPerson: null,
+          taxId: null,
+          paymentTerms: defaultIdrPaymentTransfer,
+          deliveryNotes: null,
+          billToName: incomingPo.distributorName,
+          billToAddress: null,
+          deliveredToName: incomingPo.distributorName,
+          deliveredToAddress: null,
+          fromName: null,
+          fromAddress: null,
+          toName: null,
+          toAddress: null,
+          subject: null,
+          notes: null,
+          poMasukId: incomingPo.id,
+          lines: [
+            {
+              description: `Perform Invoice${incomingPo.poNumber ? ` - ${incomingPo.poNumber}` : ""}`,
+              detail: null,
+              quantity: 1,
+              unit: "Lot",
+              unitPrice: incomingPo.totalAmount != null ? Number(incomingPo.totalAmount) : 0,
+            },
+          ],
+        }
+      : undefined;
+
   return (
     <main>
       <PageHeader title={`New Document - ${documentTypeLabels[type as DocumentType]}`} />
@@ -90,8 +136,9 @@ export default async function NewDocumentPage({
         companies={companies}
         purchaseOrders={purchaseOrders}
         suratJalans={suratJalans}
+        defaultValue={defaultValue}
         onSubmit={onSubmit}
-        submitLabel={type === "SPH" ? "Save" : "Save Draft"}
+        submitLabel={type === "SPH" || type === "PERFORM_INVOICE" ? "Save" : "Save Draft"}
       />
     </main>
   );

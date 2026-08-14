@@ -96,6 +96,37 @@ body {
   z-index: 1;
 }
 
+.doc-preview--perform-invoice {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  container-name: doc-preview;
+}
+
+.doc-preview--perform-invoice::before {
+  content: "TDA PROFORMA";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-32deg);
+  font-size: clamp(40px, 10.5vw, 96px);
+  font-size: clamp(40px, 10.5cqw, 96px);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(44, 62, 80, 0.12);
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+}
+
+.doc-preview--perform-invoice > * {
+  position: relative;
+  z-index: 1;
+}
+
 .letterhead {
   display: flex;
   align-items: flex-start;
@@ -553,7 +584,8 @@ body {
     size: A4;
   }
 
-  .doc-preview--invoice::before {
+  .doc-preview--invoice::before,
+  .doc-preview--perform-invoice::before {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

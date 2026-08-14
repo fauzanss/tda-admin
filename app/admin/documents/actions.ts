@@ -29,6 +29,7 @@ import {
   getDocumentListPath,
   getDocumentPreviewPath,
 } from "@/lib/document-paths";
+import { defaultIdrPaymentTransfer } from "@/lib/document-meta";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
@@ -38,6 +39,7 @@ const lineSchema = z.object({
   quantity: z.number().positive(),
   unit: z.string().optional(),
   unitPrice: z.number().min(0),
+  taxable: z.boolean().optional(),
 });
 
 const formSchema = z.object({
@@ -66,6 +68,7 @@ const formSchema = z.object({
   toAddress: z.string().optional(),
   notesText: z.string().optional(),
   additionalNotesText: z.string().optional(),
+  poMasukId: z.string().optional(),
   lines: z.array(lineSchema).min(1),
 });
 
@@ -75,6 +78,20 @@ function toNullable(value: string | undefined) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function paymentTransferForInvoiceLike(
+  type: DocumentType,
+  value: string | null,
+) {
+  if (type !== "INVOICE" && type !== "PERFORM_INVOICE") {
+    return value;
+  }
+  return value ?? defaultIdrPaymentTransfer;
+}
+
+function withoutTaxable<T extends { taxable?: boolean }>(lines: T[]) {
+  return lines.map(({ taxable: _taxable, ...rest }) => rest);
 }
 
 function normalizeLines(raw: string): z.infer<typeof lineSchema>[] {
@@ -110,6 +127,7 @@ function buildDocumentInput(formData: FormData) {
     toAddress: String(formData.get("toAddress") ?? ""),
     notesText: String(formData.get("notesText") ?? ""),
     additionalNotesText: String(formData.get("additionalNotesText") ?? ""),
+    poMasukId: String(formData.get("poMasukId") ?? ""),
     lines: normalizeLines(String(formData.get("lines") ?? "[]")),
   });
 
@@ -154,6 +172,7 @@ function buildDocumentInput(formData: FormData) {
     toAddress: toNullable(payload.toAddress),
     notes,
     additionalNotes,
+    poMasukId: toNullable(payload.poMasukId),
     lines: payload.lines.map((line, index) => ({
       sortOrder: index + 1,
       description: line.description,
@@ -161,6 +180,7 @@ function buildDocumentInput(formData: FormData) {
       quantity: line.quantity,
       unit: toNullable(line.unit),
       unitPrice: line.unitPrice,
+      taxable: line.taxable !== false,
     })),
   };
 }
@@ -232,12 +252,38 @@ async function createByType(input: DocumentInput, userId: string) {
         customerReference: input.customerReference,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
-        paymentTerms: input.paymentTerms,
+        paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
         billToName: input.billToName,
         billToAddress: input.billToAddress,
         deliveredToName: input.deliveredToName,
         deliveredToAddress: input.deliveredToAddress,
         withSignature: input.withSignature,
+        createdById: userId,
+        items: { create: input.lines },
+      },
+      select: { id: true },
+    });
+  }
+
+  if (input.type === "PERFORM_INVOICE") {
+    return prisma.performInvoice.create({
+      data: {
+        status: DocumentStatus.FINAL,
+        locale: input.locale,
+        documentNumber: input.documentNumber,
+        issueDate: input.issueDate,
+        dueDate: input.dueDate,
+        referencePoNumber: input.referencePoNumber,
+        customerReference: input.customerReference,
+        salesPerson: input.salesPerson,
+        taxId: input.taxId,
+        paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
+        billToName: input.billToName,
+        billToAddress: input.billToAddress,
+        deliveredToName: input.deliveredToName,
+        deliveredToAddress: input.deliveredToAddress,
+        withSignature: input.withSignature,
+        poMasukId: input.poMasukId,
         createdById: userId,
         items: { create: input.lines },
       },
@@ -261,7 +307,7 @@ async function createByType(input: DocumentInput, userId: string) {
         deliveredToAddress: input.deliveredToAddress,
         withSignature: input.withSignature,
         createdById: userId,
-        items: { create: input.lines },
+        items: { create: withoutTaxable(input.lines) },
       },
       select: { id: true },
     });
@@ -282,7 +328,7 @@ async function createByType(input: DocumentInput, userId: string) {
         deliveryNotes: input.deliveryNotes,
         withSignature: input.withSignature,
         createdById: userId,
-        items: { create: input.lines },
+        items: { create: withoutTaxable(input.lines) },
       },
       select: { id: true },
     });
@@ -309,13 +355,14 @@ async function createByType(input: DocumentInput, userId: string) {
       salesPerson: input.salesPerson,
       withSignature: input.withSignature,
       createdById: userId,
-      items: { create: input.lines },
+      items: { create: withoutTaxable(input.lines) },
     },
     select: { id: true },
   });
 }
 
-async function resolveSphDocumentNumber(
+async function resolveSlashDocumentNumber(
+  type: "SPH" | "PERFORM_INVOICE",
   existing: string | null | undefined,
   issueDate: Date,
 ) {
@@ -323,7 +370,7 @@ async function resolveSphDocumentNumber(
   if (trimmed) {
     return trimmed;
   }
-  return generateDocumentNumber("SPH", issueDate);
+  return generateDocumentNumber(type, issueDate);
 }
 
 export async function createDocument(formData: FormData) {
@@ -331,10 +378,11 @@ export async function createDocument(formData: FormData) {
   const input = buildDocumentInput(formData);
 
   const createInput =
-    input.type === "SPH"
+    input.type === "SPH" || input.type === "PERFORM_INVOICE"
       ? {
           ...input,
-          documentNumber: await resolveSphDocumentNumber(
+          documentNumber: await resolveSlashDocumentNumber(
+            input.type,
             input.documentNumber,
             input.issueDate,
           ),
@@ -375,12 +423,44 @@ export async function updateDocument(documentId: string, formData: FormData) {
         customerReference: input.customerReference,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
-        paymentTerms: input.paymentTerms,
+        paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
         billToName: input.billToName,
         billToAddress: input.billToAddress,
         deliveredToName: input.deliveredToName,
         deliveredToAddress: input.deliveredToAddress,
         withSignature: input.withSignature,
+        items: { deleteMany: {}, create: input.lines },
+      },
+    });
+  } else if (input.type === "PERFORM_INVOICE") {
+    const current = await prisma.performInvoice.findFirst({ where: { id: documentId, ...notDeleted } });
+    if (!current) {
+      throw new Error("Document not found or deleted");
+    }
+    const documentNumber = await resolveSlashDocumentNumber(
+      "PERFORM_INVOICE",
+      current.documentNumber ?? input.documentNumber,
+      input.issueDate,
+    );
+    await prisma.performInvoice.update({
+      where: { id: documentId },
+      data: {
+        status: DocumentStatus.FINAL,
+        locale: input.locale,
+        documentNumber,
+        issueDate: input.issueDate,
+        dueDate: input.dueDate,
+        referencePoNumber: input.referencePoNumber,
+        customerReference: input.customerReference,
+        salesPerson: input.salesPerson,
+        taxId: input.taxId,
+        paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
+        billToName: input.billToName,
+        billToAddress: input.billToAddress,
+        deliveredToName: input.deliveredToName,
+        deliveredToAddress: input.deliveredToAddress,
+        withSignature: input.withSignature,
+        poMasukId: input.poMasukId ?? current.poMasukId,
         items: { deleteMany: {}, create: input.lines },
       },
     });
@@ -403,7 +483,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         deliveredToName: input.deliveredToName,
         deliveredToAddress: input.deliveredToAddress,
         withSignature: input.withSignature,
-        items: { deleteMany: {}, create: input.lines },
+        items: { deleteMany: {}, create: withoutTaxable(input.lines) },
       },
     });
     const lineTotal = sumLineItemsTotal(input.lines);
@@ -427,7 +507,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         toAddress: input.toAddress ?? input.deliveredToAddress,
         deliveryNotes: input.deliveryNotes,
         withSignature: input.withSignature,
-        items: { deleteMany: {}, create: input.lines },
+        items: { deleteMany: {}, create: withoutTaxable(input.lines) },
       },
     });
   } else {
@@ -435,7 +515,8 @@ export async function updateDocument(documentId: string, formData: FormData) {
     if (!current) {
       throw new Error("Document not found or deleted");
     }
-    const documentNumber = await resolveSphDocumentNumber(
+    const documentNumber = await resolveSlashDocumentNumber(
+      "SPH",
       current.documentNumber ?? input.documentNumber,
       input.issueDate,
     );
@@ -460,7 +541,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         offerKind: input.offerKind,
         salesPerson: input.salesPerson,
         withSignature: input.withSignature,
-        items: { deleteMany: {}, create: input.lines },
+        items: { deleteMany: {}, create: withoutTaxable(input.lines) },
       },
     });
   }
@@ -500,6 +581,12 @@ export async function finalizeDocument(type: DocumentType, id: string) {
         clientName: doc.toName,
       }));
     await prisma.suratJalan.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
+  } else if (type === "PERFORM_INVOICE") {
+    const doc = await prisma.performInvoice.findFirstOrThrow({ where: { id, ...notDeleted } });
+    const number =
+      doc.documentNumber ??
+      (await generateDocumentNumber("PERFORM_INVOICE", doc.issueDate));
+    await prisma.performInvoice.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else {
     const doc = await prisma.sph.findFirstOrThrow({ where: { id, ...notDeleted } });
     const number =
@@ -528,6 +615,11 @@ export async function deleteDocument(type: DocumentType, id: string) {
     }
   } else if (type === "SURAT_JALAN") {
     const u = await prisma.suratJalan.updateMany({ where: { id, ...notDeleted }, data: { deletedAt: now } });
+    if (u.count === 0) {
+      throw new Error("Not found or already deleted");
+    }
+  } else if (type === "PERFORM_INVOICE") {
+    const u = await prisma.performInvoice.updateMany({ where: { id, ...notDeleted }, data: { deletedAt: now } });
     if (u.count === 0) {
       throw new Error("Not found or already deleted");
     }
@@ -578,6 +670,52 @@ export async function duplicateDocument(type: DocumentType, id: string) {
             unit: item.unit,
             unitPrice: item.unitPrice,
             currency: item.currency,
+            taxable: item.taxable,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    revalidatePath(getDocumentListPath(type));
+    redirect(getDocumentEditPath(type, created.id));
+  }
+
+  if (type === "PERFORM_INVOICE") {
+    const source = await prisma.performInvoice.findFirstOrThrow({
+      where: { id, ...notDeleted },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+    });
+    const documentNumber = await generateDocumentNumber("PERFORM_INVOICE", source.issueDate);
+    const created = await prisma.performInvoice.create({
+      data: {
+        status: DocumentStatus.FINAL,
+        locale: source.locale,
+        documentNumber,
+        duplicatedFromNumber: source.documentNumber ?? "(Draft)",
+        issueDate: source.issueDate,
+        dueDate: source.dueDate,
+        referencePoNumber: source.referencePoNumber,
+        customerReference: source.customerReference,
+        salesPerson: source.salesPerson,
+        taxId: source.taxId,
+        paymentTerms: source.paymentTerms,
+        billToName: source.billToName,
+        billToAddress: source.billToAddress,
+        deliveredToName: source.deliveredToName,
+        deliveredToAddress: source.deliveredToAddress,
+        withSignature: source.withSignature,
+        poMasukId: source.poMasukId,
+        createdById: userId,
+        items: {
+          create: source.items.map((item) => ({
+            sortOrder: item.sortOrder,
+            description: item.description,
+            detail: item.detail,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice,
+            currency: item.currency,
+            taxable: item.taxable,
           })),
         },
       },
@@ -719,3 +857,59 @@ export async function duplicateDocument(type: DocumentType, id: string) {
   revalidatePath(getDocumentListPath(type));
   redirect(getDocumentEditPath(type, created.id));
 }
+
+export async function convertPerformInvoiceToInvoice(id: string) {
+  const userId = await requireFileEditor();
+  const source = await prisma.performInvoice.findFirstOrThrow({
+    where: { id, ...notDeleted },
+    include: { items: { orderBy: { sortOrder: "asc" } } },
+  });
+
+  if (source.convertedToInvoiceId) {
+    redirect(getDocumentEditPath("INVOICE", source.convertedToInvoiceId));
+  }
+
+  const created = await prisma.invoice.create({
+    data: {
+      status: DocumentStatus.DRAFT,
+      locale: source.locale,
+      documentNumber: null,
+      issueDate: source.issueDate,
+      dueDate: source.dueDate,
+      referencePoNumber: source.referencePoNumber,
+      customerReference: source.customerReference,
+      salesPerson: source.salesPerson,
+      taxId: source.taxId,
+      paymentTerms: source.paymentTerms,
+      billToName: source.billToName,
+      billToAddress: source.billToAddress,
+      deliveredToName: source.deliveredToName,
+      deliveredToAddress: source.deliveredToAddress,
+      withSignature: source.withSignature,
+      createdById: userId,
+      items: {
+        create: source.items.map((item) => ({
+          sortOrder: item.sortOrder,
+          description: item.description,
+          detail: item.detail,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          currency: item.currency,
+          taxable: item.taxable,
+        })),
+      },
+    },
+    select: { id: true },
+  });
+
+  await prisma.performInvoice.update({
+    where: { id },
+    data: { convertedToInvoiceId: created.id },
+  });
+
+  revalidatePath(getDocumentListPath("PERFORM_INVOICE"));
+  revalidatePath(getDocumentListPath("INVOICE"));
+  redirect(getDocumentEditPath("INVOICE", created.id));
+}
+

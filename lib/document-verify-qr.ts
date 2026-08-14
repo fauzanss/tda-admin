@@ -26,6 +26,8 @@ function documentTypeToQrPathSegment(type: DocumentType): string {
       return "DN";
     case "INVOICE":
       return "INVOICE";
+    case "PERFORM_INVOICE":
+      return "PI";
     default: {
       const _exhaustive: never = type;
       return _exhaustive;
