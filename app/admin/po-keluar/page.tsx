@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Eye, Pencil } from "lucide-react";
 
+import { CompanyListFilter } from "@/app/admin/documents/CompanyListFilter";
 import { DeleteDocumentButton } from "@/app/admin/documents/DeleteDocumentButton";
 import { DuplicateDocumentButton } from "@/app/admin/documents/DuplicateDocumentButton";
 import { EmptyState } from "@/components/admin/EmptyState";
@@ -21,17 +22,30 @@ import { cn } from "@/lib/cn";
 import { formatAppDateTime, formatAppLongDate } from "@/lib/datetime";
 import { getDocumentEditPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { canWriteFiles } from "@/lib/role-guards";
+import { destinationNameFilter, stringFieldInNames } from "@/lib/company-destination-filter";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
 
 const PO_KELUAR_TYPE = "PURCHASE_ORDER" as const;
 
-export default async function PoKeluarListPage() {
+export default async function PoKeluarListPage({
+  searchParams,
+}: Readonly<{
+  searchParams?: Promise<{ company?: string }>;
+}>) {
   const session = await getServerSession(authOptions);
   const canWrite = canWriteFiles(session?.user?.role as string | undefined);
-  const documents = await prisma.purchaseOrder.findMany({
+  const selectedCompanyId = ((await searchParams)?.company ?? "").trim();
+  const companies = await prisma.company.findMany({
     where: { ...notDeleted },
+    orderBy: { companyName: "asc" },
+    select: { id: true, companyName: true, companyAlias: true, isActive: true },
+  });
+  const selectedCompany = companies.find((item) => item.id === selectedCompanyId) ?? null;
+  const nameFilter = stringFieldInNames(destinationNameFilter(selectedCompany));
+  const documents = await prisma.purchaseOrder.findMany({
+    where: { ...notDeleted, ...(nameFilter ? { orderToName: nameFilter } : {}) },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { poMasukLinks: true } },
@@ -43,14 +57,17 @@ export default async function PoKeluarListPage() {
       <PageHeader
         title="PO Keluar"
         actions={
-          canWrite ? (
-            <Link
-              href="/admin/po-keluar/new"
-              className={buttonVariants({ variant: "default" })}
-            >
-              + New PO Keluar
-            </Link>
-          ) : undefined
+          <>
+            <CompanyListFilter companies={companies} selectedId={selectedCompany?.id ?? ""} />
+            {canWrite ? (
+              <Link
+                href="/admin/po-keluar/new"
+                className={buttonVariants({ variant: "default" })}
+              >
+                + New PO Keluar
+              </Link>
+            ) : null}
+          </>
         }
       />
 

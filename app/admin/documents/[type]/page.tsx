@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Eye, PenSquare, Printer } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { CompanyListFilter } from "@/app/admin/documents/CompanyListFilter";
 import { DeleteDocumentButton } from "@/app/admin/documents/DeleteDocumentButton";
 import { DuplicateDocumentButton } from "@/app/admin/documents/DuplicateDocumentButton";
 import { asDocumentType } from "@/app/admin/documents/document-type";
@@ -22,6 +23,7 @@ import { cn } from "@/lib/cn";
 import { canWriteFiles } from "@/lib/role-guards";
 import { documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentEditPath, getDocumentNewPath, getDocumentPreviewPath } from "@/lib/document-paths";
+import { destinationNameFilter, stringFieldInNames } from "@/lib/company-destination-filter";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
@@ -45,8 +47,10 @@ function getCompanyName(
 
 export default async function DocumentListPage({
   params,
+  searchParams,
 }: Readonly<{
   params: Promise<{ type: string }>;
+  searchParams?: Promise<{ company?: string }>;
 }>) {
   const resolved = await params;
   const type = asDocumentType(resolved.type);
@@ -55,15 +59,37 @@ export default async function DocumentListPage({
   }
   const session = await getServerSession(authOptions);
   const canWrite = canWriteFiles(session?.user?.role as string | undefined);
+  const selectedCompanyId = ((await searchParams)?.company ?? "").trim();
+  const companies = await prisma.company.findMany({
+    where: { ...notDeleted },
+    orderBy: { companyName: "asc" },
+    select: { id: true, companyName: true, companyAlias: true, isActive: true },
+  });
+  const selectedCompany = companies.find((item) => item.id === selectedCompanyId) ?? null;
+  const destinationNames = destinationNameFilter(selectedCompany);
+  const nameFilter = stringFieldInNames(destinationNames);
+
   let documents;
   if (type === "INVOICE") {
-    documents = await prisma.invoice.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
+    documents = await prisma.invoice.findMany({
+      where: { ...notDeleted, ...(nameFilter ? { billToName: nameFilter } : {}) },
+      orderBy: { createdAt: "desc" },
+    });
   } else if (type === "PERFORM_INVOICE") {
-    documents = await prisma.performInvoice.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
+    documents = await prisma.performInvoice.findMany({
+      where: { ...notDeleted, ...(nameFilter ? { billToName: nameFilter } : {}) },
+      orderBy: { createdAt: "desc" },
+    });
   } else if (type === "SURAT_JALAN") {
-    documents = await prisma.suratJalan.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
+    documents = await prisma.suratJalan.findMany({
+      where: { ...notDeleted, ...(nameFilter ? { toName: nameFilter } : {}) },
+      orderBy: { createdAt: "desc" },
+    });
   } else {
-    documents = await prisma.sph.findMany({ where: { ...notDeleted }, orderBy: { createdAt: "desc" } });
+    documents = await prisma.sph.findMany({
+      where: { ...notDeleted, ...(nameFilter ? { recipientCompany: nameFilter } : {}) },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   return (
@@ -71,11 +97,14 @@ export default async function DocumentListPage({
       <PageHeader
         title={documentTypeLabels[type]}
         actions={
-          canWrite ? (
-            <Link href={getDocumentNewPath(type)} className={cn(buttonVariants())}>
-              + New Document
-            </Link>
-          ) : undefined
+          <>
+            <CompanyListFilter companies={companies} selectedId={selectedCompany?.id ?? ""} />
+            {canWrite ? (
+              <Link href={getDocumentNewPath(type)} className={cn(buttonVariants())}>
+                + New Document
+              </Link>
+            ) : null}
+          </>
         }
       />
 
