@@ -1,6 +1,6 @@
 "use client";
 
-import { DocumentLocale, DocumentType, PaymentTermType, SphOfferKind } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType, PaymentTermType, SphOfferKind, type BillingPhase } from "@/generated/prisma/client";
 import { useState } from "react";
 
 import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { billingPhaseOptions, getBillingPhaseLabel } from "@/lib/billing-phase";
 import { cn } from "@/lib/cn";
 import { defaultIdrPaymentTransfer } from "@/lib/document-meta";
 import type { InstallmentInput } from "@/lib/po-payment";
@@ -78,6 +79,7 @@ type DocumentWithLines = {
   referencePoNumber: string | null;
   referenceBastSjNumber: string | null;
   customerReference: string | null;
+  billingPhase?: BillingPhase | null;
   salesPerson: string | null;
   taxId: string | null;
   paymentTerms: string | null;
@@ -343,7 +345,7 @@ export function DocumentForm({
                 defaultValue={defaultValue?.dueDate ? defaultValue.dueDate.toISOString().slice(0, 10) : ""}
               />
             )}
-            {isSph || isPerformInvoice ? (
+            {isSph || isPerformInvoice || isInvoice ? (
               defaultValue?.documentNumber ? (
                 <div>
                   <Label>Document Number</Label>
@@ -420,6 +422,22 @@ export function DocumentForm({
             )}
             {isInvoice && (
               <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
+            )}
+            {isInvoiceLike && (
+              <div>
+                <Label htmlFor="billingPhase">Billing phase</Label>
+                <Select
+                  id="billingPhase"
+                  name="billingPhase"
+                  defaultValue={defaultValue?.billingPhase ?? "FULL"}
+                >
+                  {billingPhaseOptions.map((phase) => (
+                    <option key={phase} value={phase}>
+                      {getBillingPhaseLabel(phase, defaultValue?.locale ?? "ID")}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             )}
             {isInvoiceLike && (
               <Field name="customerReference" label="Customer Reference" defaultValue={defaultValue?.customerReference ?? ""} />

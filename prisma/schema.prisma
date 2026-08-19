@@ -25,6 +25,12 @@ enum DocumentStatus {
   FINAL
 }
 
+enum BillingPhase {
+  FULL
+  TERMIN_90
+  RETENTION_10
+}
+
 enum DocumentLocale {
   EN
   ID
@@ -152,6 +158,7 @@ model Invoice {
   referencePoNumber     String?
   referenceBastSjNumber String?
   customerReference     String?
+  billingPhase          BillingPhase   @default(FULL)
   salesPerson           String?
   taxId                 String?
   paymentTerms          String?        @db.Text
@@ -180,6 +187,7 @@ model PerformInvoice {
   dueDate               DateTime?
   referencePoNumber     String?
   customerReference     String?
+  billingPhase          BillingPhase   @default(FULL)
   salesPerson           String?
   taxId                 String?
   paymentTerms          String?        @db.Text

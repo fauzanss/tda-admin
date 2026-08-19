@@ -3,13 +3,12 @@ import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
-const slashNumberedTypes = new Set<DocumentType>(["SPH", "PERFORM_INVOICE"]);
+const slashNumberedTypes = new Set<DocumentType>(["SPH", "PERFORM_INVOICE", "INVOICE"]);
 
 const documentNumberPrefixes: Record<
-  Exclude<DocumentType, "SPH" | "PERFORM_INVOICE">,
+  Exclude<DocumentType, "SPH" | "PERFORM_INVOICE" | "INVOICE">,
   string
 > = {
-  INVOICE: "INV",
   PURCHASE_ORDER: "PO",
   SURAT_JALAN: "DO",
 };
@@ -34,6 +33,16 @@ export function formatSphDocumentNumber(sequence: number, year: number) {
 
 export function formatPerformInvoiceDocumentNumber(sequence: number, year: number) {
   return `PI/TDA/${String(sequence).padStart(3, "0")}/${year}`;
+}
+
+const romanMonths = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"] as const;
+
+export function toRomanMonth(month: number) {
+  return romanMonths[month - 1] ?? String(month);
+}
+
+export function formatInvoiceDocumentNumber(sequence: number, month: number, year: number) {
+  return `INV/TDA/${String(sequence).padStart(3, "0")}/${toRomanMonth(month)}/${year}`;
 }
 
 async function listDocumentNumbersForSequencing(
@@ -81,12 +90,40 @@ function nextSlashSequence(
   }, 0);
 }
 
+function nextInvoiceSequence(
+  rows: Array<{ documentNumber: string | null }>,
+  month: number,
+  year: number,
+) {
+  const roman = toRomanMonth(month);
+  const pattern = new RegExp(String.raw`^INV/TDA/(\d+)/${roman}/${year}$`);
+  return rows.reduce((max, row) => {
+    const value = row.documentNumber;
+    if (!value) return max;
+    const match = pattern.exec(value);
+    if (!match) return max;
+    const seq = Number(match[1]);
+    if (Number.isNaN(seq)) return max;
+    return Math.max(max, seq);
+  }, 0);
+}
+
 export async function generateDocumentNumber(
   type: DocumentType,
   date: Date,
   options?: { clientName?: string | null },
 ) {
   const year = date.getFullYear();
+
+  if (type === "INVOICE") {
+    const month = date.getMonth();
+    const monthNumber = month + 1;
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 1);
+    const invoiceRows = await listDocumentNumbersForSequencing(type, monthStart, monthEnd);
+    return formatInvoiceDocumentNumber(nextInvoiceSequence(invoiceRows, monthNumber, year) + 1, monthNumber, year);
+  }
+
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year + 1, 0, 1);
   const rows = await listDocumentNumbersForSequencing(type, yearStart, yearEnd);

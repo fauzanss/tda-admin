@@ -6,6 +6,7 @@ import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { getDocumentStrings, getSphClosingText } from "@/lib/document-i18n";
 import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
+import { getBillingPhaseLabel } from "@/lib/billing-phase";
 import { formatCurrency, formatCurrencyAmount, formatLongDate, parseNotes } from "@/lib/documents";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -154,6 +155,7 @@ export async function DocumentPreviewView({
       : [];
   const referencePoNumber = "referencePoNumber" in document ? document.referencePoNumber : null;
   const referenceBastSjNumber = "referenceBastSjNumber" in document ? document.referenceBastSjNumber : null;
+  const billingPhase = "billingPhase" in document ? document.billingPhase : null;
   const subject = "subject" in document ? document.subject : null;
   const billToName =
     "billToName" in document
@@ -259,6 +261,12 @@ export async function DocumentPreviewView({
             </div>
           )}
           {referenceBastSjNumber && <div className="info-row"><span className="info-label">{t.bastSjNo}</span><span className="info-value">: {referenceBastSjNumber}</span></div>}
+          {(type === "INVOICE" || type === "PERFORM_INVOICE") && billingPhase && (
+            <div className="info-row">
+              <span className="info-label">{t.billingPhase}</span>
+              <span className="info-value">: {getBillingPhaseLabel(billingPhase, locale)}</span>
+            </div>
+          )}
           {poTaxId && (type === "INVOICE" || type === "PERFORM_INVOICE" || type === "PURCHASE_ORDER") && <div className="info-row"><span className="info-label">{t.taxId}</span><span className="info-value">: {poTaxId}</span></div>}
           {subject && <div className="info-row"><span className="info-label">{t.subject}</span><span className="info-value">: {subject}</span></div>}
         </div>

@@ -21,7 +21,7 @@ function createAdapter() {
   });
 }
 
-const PRISMA_CLIENT_REV = "perform-invoice-taxable-v1";
+const PRISMA_CLIENT_REV = "billing-phase-v1";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

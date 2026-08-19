@@ -101,6 +101,7 @@ export default async function NewDocumentPage({
           referencePoNumber: incomingPo.poNumber ?? null,
           referenceBastSjNumber: null,
           customerReference: null,
+          billingPhase: "TERMIN_90" as const,
           salesPerson: null,
           taxId: null,
           paymentTerms: defaultIdrPaymentTransfer,
@@ -138,7 +139,7 @@ export default async function NewDocumentPage({
         suratJalans={suratJalans}
         defaultValue={defaultValue}
         onSubmit={onSubmit}
-        submitLabel={type === "SPH" || type === "PERFORM_INVOICE" ? "Save" : "Save Draft"}
+        submitLabel={type === "SPH" || type === "PERFORM_INVOICE" || type === "INVOICE" ? "Save" : "Save Draft"}
       />
     </main>
   );

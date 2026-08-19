@@ -45,6 +45,7 @@ export type DocumentStrings = {
   paymentTerms: string;
   deliveryInstructions: string;
   deliveryNotes: string;
+  billingPhase: string;
   offerNotes: string;
   additionalInformation: string;
   sphClosing: string;
@@ -107,6 +108,7 @@ const sharedEn: Omit<
   subtotal: "Subtotal",
   ppn: "PPN 11%",
   nonTaxable: "Non-taxable",
+  billingPhase: "Billing phase",
   grandTotal: "Grand Total",
   offerNotes: "Offer Notes",
   additionalInformation: "Additional Information",
@@ -151,6 +153,7 @@ const sharedId: typeof sharedEn = {
   subtotal: "Subtotal",
   ppn: "PPN 11%",
   nonTaxable: "Tidak kena pajak",
+  billingPhase: "Termin penagihan",
   grandTotal: "Total Keseluruhan",
   offerNotes: "Catatan Penawaran",
   additionalInformation: "Informasi Tambahan",

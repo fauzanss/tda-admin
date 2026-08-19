@@ -104,6 +104,20 @@ export default async function EditDocumentPage({
             include: { items: { orderBy: { sortOrder: "asc" } } },
           });
 
+  let linkedInvoice: { id: string; documentNumber: string | null } | null = null;
+  if (type === "PERFORM_INVOICE" && "convertedToInvoiceId" in document && document.convertedToInvoiceId) {
+    linkedInvoice = await prisma.invoice.findFirst({
+      where: { id: document.convertedToInvoiceId, ...notDeleted },
+      select: { id: true, documentNumber: true },
+    });
+    if (!linkedInvoice) {
+      await prisma.performInvoice.update({
+        where: { id: document.id },
+        data: { convertedToInvoiceId: null },
+      });
+    }
+  }
+
   async function onSubmit(formData: FormData) {
     "use server";
     await updateDocument(document.id, formData);
@@ -131,6 +145,7 @@ export default async function EditDocumentPage({
     referenceBastSjNumber:
       "referenceBastSjNumber" in document ? document.referenceBastSjNumber ?? null : null,
     customerReference: "customerReference" in document ? document.customerReference ?? null : null,
+    billingPhase: "billingPhase" in document ? document.billingPhase : undefined,
     salesPerson: "salesPerson" in document ? document.salesPerson ?? null : null,
     taxId: "taxId" in document ? document.taxId ?? null : null,
     paymentTerms: "paymentTerms" in document ? document.paymentTerms ?? null : null,
@@ -172,7 +187,7 @@ export default async function EditDocumentPage({
     <main>
       {resolvedSearchParams.updated === "1" && (
         <Alert variant="success" className="mb-4">
-          {type === "SPH" || type === "PERFORM_INVOICE"
+          {type === "SPH" || type === "PERFORM_INVOICE" || type === "INVOICE"
             ? "Document updated successfully."
             : "Draft updated successfully."}
         </Alert>
@@ -187,25 +202,22 @@ export default async function EditDocumentPage({
             >
               Preview
             </Link>
-            {type === "PERFORM_INVOICE" &&
-              (!("convertedToInvoiceId" in document) || !document.convertedToInvoiceId) && (
+            {type === "PERFORM_INVOICE" && !linkedInvoice && (
               <form action={onConvertToInvoice}>
                 <SubmitButton variant="secondary" size="sm" pendingLabel="Converting...">
                   Convert to Invoice
                 </SubmitButton>
               </form>
             )}
-            {type === "PERFORM_INVOICE" &&
-              "convertedToInvoiceId" in document &&
-              document.convertedToInvoiceId && (
+            {type === "PERFORM_INVOICE" && linkedInvoice && (
               <Link
-                href={getDocumentEditPath("INVOICE", document.convertedToInvoiceId)}
+                href={getDocumentEditPath("INVOICE", linkedInvoice.id)}
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               >
                 Open Invoice
               </Link>
             )}
-            {type !== "SPH" && type !== "PERFORM_INVOICE" && (
+            {type !== "SPH" && type !== "PERFORM_INVOICE" && type !== "INVOICE" && (
               <form action={onFinalize}>
                 <SubmitButton variant="secondary" size="sm" pendingLabel="Finalizing...">
                   Finalize
@@ -223,7 +235,7 @@ export default async function EditDocumentPage({
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}
         onSubmit={onSubmit}
-        submitLabel={type === "SPH" || type === "PERFORM_INVOICE" ? "Save" : "Update Draft"}
+        submitLabel={type === "SPH" || type === "PERFORM_INVOICE" || type === "INVOICE" ? "Save" : "Update Draft"}
       />
     </main>
   );

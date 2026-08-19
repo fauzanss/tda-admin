@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  BillingPhase,
   DocumentLocale,
   DocumentStatus,
   DocumentType,
@@ -30,6 +31,7 @@ import {
   getDocumentPreviewPath,
 } from "@/lib/document-paths";
 import { defaultIdrPaymentTransfer } from "@/lib/document-meta";
+import { parseBillingPhase } from "@/lib/billing-phase";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
@@ -53,6 +55,7 @@ const formSchema = z.object({
   referencePoNumber: z.string().optional(),
   referenceBastSjNumber: z.string().optional(),
   customerReference: z.string().optional(),
+  billingPhase: z.enum(["FULL", "TERMIN_90", "RETENTION_10"]).optional(),
   salesPerson: z.string().optional(),
   taxId: z.string().optional(),
   paymentTerms: z.string().optional(),
@@ -112,6 +115,7 @@ function buildDocumentInput(formData: FormData) {
     referencePoNumber: String(formData.get("referencePoNumber") ?? ""),
     referenceBastSjNumber: String(formData.get("referenceBastSjNumber") ?? ""),
     customerReference: String(formData.get("customerReference") ?? ""),
+    billingPhase: String(formData.get("billingPhase") ?? "FULL"),
     salesPerson: String(formData.get("salesPerson") ?? ""),
     taxId: String(formData.get("taxId") ?? ""),
     paymentTerms: String(formData.get("paymentTerms") ?? ""),
@@ -157,6 +161,7 @@ function buildDocumentInput(formData: FormData) {
     referencePoNumber: toNullable(payload.referencePoNumber),
     referenceBastSjNumber: toNullable(payload.referenceBastSjNumber),
     customerReference: toNullable(payload.customerReference),
+    billingPhase: parseBillingPhase(payload.billingPhase),
     salesPerson: toNullable(payload.salesPerson),
     taxId: toNullable(payload.taxId),
     paymentTerms: toNullable(payload.paymentTerms),
@@ -242,7 +247,7 @@ async function createByType(input: DocumentInput, userId: string) {
   if (input.type === "INVOICE") {
     return prisma.invoice.create({
       data: {
-        status: DocumentStatus.DRAFT,
+        status: DocumentStatus.FINAL,
         locale: input.locale,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
@@ -250,6 +255,7 @@ async function createByType(input: DocumentInput, userId: string) {
         referencePoNumber: input.referencePoNumber,
         referenceBastSjNumber: input.referenceBastSjNumber,
         customerReference: input.customerReference,
+        billingPhase: input.billingPhase,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
         paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
@@ -275,6 +281,7 @@ async function createByType(input: DocumentInput, userId: string) {
         dueDate: input.dueDate,
         referencePoNumber: input.referencePoNumber,
         customerReference: input.customerReference,
+        billingPhase: input.billingPhase,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
         paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
@@ -362,7 +369,7 @@ async function createByType(input: DocumentInput, userId: string) {
 }
 
 async function resolveSlashDocumentNumber(
-  type: "SPH" | "PERFORM_INVOICE",
+  type: "SPH" | "PERFORM_INVOICE" | "INVOICE",
   existing: string | null | undefined,
   issueDate: Date,
 ) {
@@ -378,7 +385,9 @@ export async function createDocument(formData: FormData) {
   const input = buildDocumentInput(formData);
 
   const createInput =
-    input.type === "SPH" || input.type === "PERFORM_INVOICE"
+    input.type === "SPH" ||
+    input.type === "PERFORM_INVOICE" ||
+    input.type === "INVOICE"
       ? {
           ...input,
           documentNumber: await resolveSlashDocumentNumber(
@@ -411,16 +420,23 @@ export async function updateDocument(documentId: string, formData: FormData) {
     if (!current) {
       throw new Error("Document not found or deleted");
     }
+    const documentNumber = await resolveSlashDocumentNumber(
+      "INVOICE",
+      current.documentNumber ?? input.documentNumber,
+      input.issueDate,
+    );
     await prisma.invoice.update({
       where: { id: documentId },
       data: {
+        status: DocumentStatus.FINAL,
         locale: input.locale,
-        documentNumber: input.documentNumber,
+        documentNumber,
         issueDate: input.issueDate,
         dueDate: input.dueDate,
         referencePoNumber: input.referencePoNumber,
         referenceBastSjNumber: input.referenceBastSjNumber,
         customerReference: input.customerReference,
+        billingPhase: input.billingPhase,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
         paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
@@ -452,6 +468,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         dueDate: input.dueDate,
         referencePoNumber: input.referencePoNumber,
         customerReference: input.customerReference,
+        billingPhase: input.billingPhase,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
         paymentTerms: paymentTransferForInvoiceLike(input.type, input.paymentTerms),
@@ -560,10 +577,7 @@ export async function finalizeDocument(type: DocumentType, id: string) {
   if (type === "INVOICE") {
     const doc = await prisma.invoice.findFirstOrThrow({ where: { id, ...notDeleted } });
     const number =
-      doc.documentNumber ??
-      (await generateDocumentNumber(type, doc.issueDate, {
-        clientName: doc.billToName ?? doc.deliveredToName,
-      }));
+      doc.documentNumber ?? (await generateDocumentNumber("INVOICE", doc.issueDate));
     await prisma.invoice.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else if (type === "PURCHASE_ORDER") {
     const doc = await prisma.purchaseOrder.findFirstOrThrow({ where: { id, ...notDeleted } });
@@ -604,8 +618,14 @@ export async function deleteDocument(type: DocumentType, id: string) {
   const now = new Date();
 
   if (type === "INVOICE") {
-    const u = await prisma.invoice.updateMany({ where: { id, ...notDeleted }, data: { deletedAt: now } });
-    if (u.count === 0) {
+    const [, invoiceUpdate] = await prisma.$transaction([
+      prisma.performInvoice.updateMany({
+        where: { convertedToInvoiceId: id },
+        data: { convertedToInvoiceId: null },
+      }),
+      prisma.invoice.updateMany({ where: { id, ...notDeleted }, data: { deletedAt: now } }),
+    ]);
+    if (invoiceUpdate.count === 0) {
       throw new Error("Not found or already deleted");
     }
   } else if (type === "PURCHASE_ORDER") {
@@ -641,17 +661,19 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       where: { id, ...notDeleted },
       include: { items: { orderBy: { sortOrder: "asc" } } },
     });
+    const documentNumber = await generateDocumentNumber("INVOICE", source.issueDate);
     const created = await prisma.invoice.create({
       data: {
-        status: DocumentStatus.DRAFT,
+        status: DocumentStatus.FINAL,
         locale: source.locale,
-        documentNumber: null,
+        documentNumber,
         duplicatedFromNumber: source.documentNumber ?? "(Draft)",
         issueDate: source.issueDate,
         dueDate: source.dueDate,
         referencePoNumber: source.referencePoNumber,
         referenceBastSjNumber: source.referenceBastSjNumber,
         customerReference: source.customerReference,
+        billingPhase: source.billingPhase,
         salesPerson: source.salesPerson,
         taxId: source.taxId,
         paymentTerms: source.paymentTerms,
@@ -696,6 +718,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
         dueDate: source.dueDate,
         referencePoNumber: source.referencePoNumber,
         customerReference: source.customerReference,
+        billingPhase: source.billingPhase,
         salesPerson: source.salesPerson,
         taxId: source.taxId,
         paymentTerms: source.paymentTerms,
@@ -866,18 +889,30 @@ export async function convertPerformInvoiceToInvoice(id: string) {
   });
 
   if (source.convertedToInvoiceId) {
-    redirect(getDocumentEditPath("INVOICE", source.convertedToInvoiceId));
+    const linkedInvoice = await prisma.invoice.findFirst({
+      where: { id: source.convertedToInvoiceId, ...notDeleted },
+      select: { id: true },
+    });
+    if (linkedInvoice) {
+      redirect(getDocumentEditPath("INVOICE", linkedInvoice.id));
+    }
+    await prisma.performInvoice.update({
+      where: { id },
+      data: { convertedToInvoiceId: null },
+    });
   }
 
+  const documentNumber = await generateDocumentNumber("INVOICE", source.issueDate);
   const created = await prisma.invoice.create({
     data: {
-      status: DocumentStatus.DRAFT,
+      status: DocumentStatus.FINAL,
       locale: source.locale,
-      documentNumber: null,
+      documentNumber,
       issueDate: source.issueDate,
       dueDate: source.dueDate,
       referencePoNumber: source.referencePoNumber,
       customerReference: source.customerReference,
+      billingPhase: source.billingPhase,
       salesPerson: source.salesPerson,
       taxId: source.taxId,
       paymentTerms: source.paymentTerms,

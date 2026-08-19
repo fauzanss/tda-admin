@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/cn";
 import { canWriteFiles } from "@/lib/role-guards";
 import { documentTypeLabels } from "@/lib/document-meta";
+import { getBillingPhaseLabel } from "@/lib/billing-phase";
 import { getDocumentEditPath, getDocumentNewPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { destinationNameFilter, stringFieldInNames } from "@/lib/company-destination-filter";
 import { prisma } from "@/lib/prisma";
@@ -92,6 +93,8 @@ export default async function DocumentListPage({
     });
   }
 
+  const showBillingPhase = type === "INVOICE" || type === "PERFORM_INVOICE";
+
   return (
     <main>
       <PageHeader
@@ -114,6 +117,7 @@ export default async function DocumentListPage({
             <TableRow>
               <TableHead>No</TableHead>
               <TableHead>Company Name</TableHead>
+              {showBillingPhase && <TableHead>Billing</TableHead>}
               <TableHead>Date</TableHead>
               <TableHead>Last Updated</TableHead>
               <TableHead>Status</TableHead>
@@ -123,7 +127,7 @@ export default async function DocumentListPage({
           <TableBody>
             {documents.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="p-0">
+                <TableCell colSpan={showBillingPhase ? 7 : 6} className="p-0">
                   <EmptyState />
                 </TableCell>
               </TableRow>
@@ -132,6 +136,17 @@ export default async function DocumentListPage({
               <TableRow key={doc.id}>
                 <TableCell>{doc.documentNumber ?? "-"}</TableCell>
                 <TableCell>{getCompanyName(type, doc)}</TableCell>
+                {showBillingPhase && (
+                  <TableCell>
+                    {"billingPhase" in doc && doc.billingPhase !== "FULL" ? (
+                      <Badge variant="orange">
+                        {getBillingPhaseLabel(doc.billingPhase, doc.locale)}
+                      </Badge>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                )}
                 <TableCell>{formatAppLongDate(doc.issueDate)}</TableCell>
                 <TableCell>{formatAppDateTime(doc.updatedAt)}</TableCell>
                 <TableCell>
