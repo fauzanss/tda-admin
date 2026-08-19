@@ -45,7 +45,7 @@ export default async function EditDocumentPage({
       isActive: true,
     },
   });
-  const purchaseOrdersRaw = await prisma.purchaseOrder.findMany({
+  const purchaseOrders = await prisma.purchaseOrder.findMany({
     where: { ...notDeleted },
     orderBy: { createdAt: "desc" },
     select: {
@@ -55,32 +55,6 @@ export default async function EditDocumentPage({
       orderToAddress: true,
       deliveredToName: true,
       deliveredToAddress: true,
-      items: {
-        orderBy: { sortOrder: "asc" },
-        select: {
-          description: true,
-          detail: true,
-          quantity: true,
-          unit: true,
-          unitPrice: true,
-        },
-      },
-    },
-  });
-  const purchaseOrders = purchaseOrdersRaw.map((po) => ({
-    ...po,
-    items: po.items.map((item) => ({
-      ...item,
-      quantity: Number(item.quantity),
-      unitPrice: Number(item.unitPrice),
-    })),
-  }));
-  const suratJalans = await prisma.suratJalan.findMany({
-    where: { ...notDeleted },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      documentNumber: true,
     },
   });
   const document =
@@ -231,7 +205,6 @@ export default async function EditDocumentPage({
         type={type}
         companies={companies}
         purchaseOrders={purchaseOrders}
-        suratJalans={suratJalans}
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}
         onSubmit={onSubmit}

@@ -38,7 +38,7 @@ export default async function EditPoKeluarPage({
     redirect("/admin/po-keluar");
   }
 
-  const [{ companies, purchaseOrders, suratJalans, incomingPoOptions }, document] =
+  const [{ companies, purchaseOrders, incomingPoOptions }, document] =
     await Promise.all([
       getPoKeluarFormData(),
       prisma.purchaseOrder.findFirst({
@@ -163,7 +163,6 @@ export default async function EditPoKeluarPage({
         type={PO_KELUAR_TYPE}
         companies={companies}
         purchaseOrders={purchaseOrders}
-        suratJalans={suratJalans}
         incomingPoOptions={incomingPoOptions}
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}

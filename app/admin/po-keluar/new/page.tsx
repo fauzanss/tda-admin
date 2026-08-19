@@ -17,7 +17,7 @@ export default async function NewPoKeluarPage() {
     redirect("/admin/po-keluar");
   }
 
-  const { companies, purchaseOrders, suratJalans, incomingPoOptions } = await getPoKeluarFormData();
+  const { companies, purchaseOrders, incomingPoOptions } = await getPoKeluarFormData();
 
   async function onSubmit(formData: FormData) {
     "use server";
@@ -31,7 +31,6 @@ export default async function NewPoKeluarPage() {
         type={PO_KELUAR_TYPE}
         companies={companies}
         purchaseOrders={purchaseOrders}
-        suratJalans={suratJalans}
         incomingPoOptions={incomingPoOptions}
         onSubmit={onSubmit}
         submitLabel="Save Draft"

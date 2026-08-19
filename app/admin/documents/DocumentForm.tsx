@@ -126,18 +126,6 @@ type PurchaseOrderOption = {
   orderToAddress: string | null;
   deliveredToName: string | null;
   deliveredToAddress: string | null;
-  items?: Array<{
-    description: string;
-    detail: string | null;
-    quantity: number;
-    unit: string | null;
-    unitPrice: number;
-  }>;
-};
-
-type SuratJalanOption = {
-  id: string;
-  documentNumber: string | null;
 };
 
 function emptyLine(): FormLine {
@@ -155,7 +143,6 @@ export function DocumentForm({
   type,
   companies,
   purchaseOrders,
-  suratJalans,
   incomingPoOptions = [],
   defaultValue,
   duplicateInfo,
@@ -165,7 +152,6 @@ export function DocumentForm({
   type: DocumentType;
   companies: CompanyOption[];
   purchaseOrders?: PurchaseOrderOption[];
-  suratJalans?: SuratJalanOption[];
   incomingPoOptions?: PoLinkOption[];
   defaultValue?: DocumentWithLines;
   duplicateInfo?: string | null;
@@ -271,33 +257,6 @@ export function DocumentForm({
     applyTextValue("toAddress", selected.deliveredToAddress ?? "", true);
   }
 
-  function applyDocumentNumberToField(fieldName: string, value: string) {
-    const element = document.querySelector<HTMLInputElement>(`input[name="${fieldName}"]`);
-    if (element) {
-      element.value = value;
-    }
-  }
-
-  function applyInvoiceFromPo(poId: string) {
-    const selected = purchaseOrders?.find((item) => item.id === poId);
-    if (!selected) return;
-
-    applyDocumentNumberToField("referencePoNumber", selected.documentNumber ?? "");
-
-    if (selected.items && selected.items.length > 0) {
-      const mappedLines = selected.items.map((item) => ({
-        description: item.description,
-        detail: item.detail ?? "",
-        quantity: Number(item.quantity),
-        unit: item.unit ?? "",
-        unitPrice: Number(item.unitPrice),
-        taxable: true,
-      }));
-      setLines(mappedLines);
-      setPriceInputs(mappedLines.map((item) => formatPriceInput(item.unitPrice)));
-    }
-  }
-
   return (
     <form action={onSubmit}>
       <Card>
@@ -373,52 +332,8 @@ export function DocumentForm({
                 defaultValue={defaultValue?.documentNumber ?? ""}
               />
             )}
-            {isInvoice && (
-              <div>
-                <Label htmlFor="po-reference-select">Select PO Reference</Label>
-                <Select
-                  id="po-reference-select"
-                  defaultValue={
-                    purchaseOrders?.find((item) => item.documentNumber === defaultValue?.referencePoNumber)?.id ??
-                    ""
-                  }
-                  onChange={(event) => applyInvoiceFromPo(event.target.value)}
-                >
-                  <option value="">Select PO Reference</option>
-                  {(purchaseOrders ?? []).map((po) => (
-                    <option key={po.id} value={po.id}>
-                      {po.documentNumber ?? "(Draft PO)"}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            )}
             {isInvoiceLike && (
               <Field name="referencePoNumber" label="PO Reference" defaultValue={defaultValue?.referencePoNumber ?? ""} />
-            )}
-            {isInvoice && (
-              <div>
-                <Label htmlFor="bast-sj-reference-select">Select BAST/SJ Reference</Label>
-                <Select
-                  id="bast-sj-reference-select"
-                  defaultValue={
-                    suratJalans?.find(
-                      (item) => item.documentNumber === defaultValue?.referenceBastSjNumber,
-                    )?.id ?? ""
-                  }
-                  onChange={(event) => {
-                    const selected = suratJalans?.find((item) => item.id === event.target.value);
-                    applyDocumentNumberToField("referenceBastSjNumber", selected?.documentNumber ?? "");
-                  }}
-                >
-                  <option value="">Select BAST/SJ Reference</option>
-                  {(suratJalans ?? []).map((sj) => (
-                    <option key={sj.id} value={sj.id}>
-                      {sj.documentNumber ?? "(Draft SJ)"}
-                    </option>
-                  ))}
-                </Select>
-              </div>
             )}
             {isInvoice && (
               <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
