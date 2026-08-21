@@ -13,6 +13,7 @@ export type DocumentStrings = {
   deliveryNoteNo: string;
   number: string;
   bastSjNo: string;
+  taxInvoiceNo: string;
   taxId: string;
   subject: string;
   billTo: string;
@@ -93,6 +94,7 @@ const sharedEn: Omit<
   date: "Date",
   poNo: "PO No.",
   bastSjNo: "BAST / SJ No.",
+  taxInvoiceNo: "Tax Invoice No.",
   taxId: "Tax ID",
   subject: "Subject",
   to: "To",
@@ -138,6 +140,7 @@ const sharedId: typeof sharedEn = {
   date: "Tanggal",
   poNo: "No. PO",
   bastSjNo: "No. BAST / SJ",
+  taxInvoiceNo: "No. Faktur Pajak",
   taxId: "NPWP",
   subject: "Perihal",
   to: "Kepada",

@@ -79,6 +79,7 @@ type DocumentWithLines = {
   referencePoNumber: string | null;
   referenceBastSjNumber: string | null;
   customerReference: string | null;
+  taxInvoiceNumber?: string | null;
   billingPhase?: BillingPhase | null;
   salesPerson: string | null;
   taxId: string | null;
@@ -337,6 +338,24 @@ export function DocumentForm({
             )}
             {isInvoice && (
               <Field name="referenceBastSjNumber" label="BAST/SJ Reference" defaultValue={defaultValue?.referenceBastSjNumber ?? ""} />
+            )}
+            {isInvoice && (
+              <Field
+                name="taxInvoiceNumber"
+                label="No. Faktur Pajak"
+                defaultValue={defaultValue?.taxInvoiceNumber ?? ""}
+              />
+            )}
+            {isInvoice && (
+              <div className="md:col-span-2">
+                <GoogleDriveLinkFields
+                  initialLink={defaultValue?.gdriveWebViewLink}
+                  initialFileName={defaultValue?.gdriveFileName}
+                  linkLabel="Faktur Pajak - Google Drive Link"
+                  fileLabel="Faktur Pajak File Label"
+                  helpText="Upload PDF faktur pajak ke Google Drive, lalu paste share link di sini."
+                />
+              </div>
             )}
             {isInvoiceLike && (
               <div>

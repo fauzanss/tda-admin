@@ -21,7 +21,7 @@ function createAdapter() {
   });
 }
 
-const PRISMA_CLIENT_REV = "billing-phase-v1";
+const PRISMA_CLIENT_REV = "invoice-tax-gdrive-v2";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

@@ -75,6 +75,7 @@ export default async function NewDocumentPage({
           referencePoNumber: incomingPo.poNumber ?? null,
           referenceBastSjNumber: null,
           customerReference: null,
+          taxInvoiceNumber: null,
           billingPhase: "TERMIN_90" as const,
           salesPerson: null,
           taxId: null,

@@ -158,6 +158,7 @@ model Invoice {
   referencePoNumber     String?
   referenceBastSjNumber String?
   customerReference     String?
+  taxInvoiceNumber      String?
   billingPhase          BillingPhase   @default(FULL)
   salesPerson           String?
   taxId                 String?
@@ -167,6 +168,9 @@ model Invoice {
   deliveredToName       String?
   deliveredToAddress    String?        @db.Text
   withSignature         Boolean        @default(true)
+  gdriveFileId          String?
+  gdriveFileName        String?
+  gdriveWebViewLink     String?
   createdById           String
   createdBy             User           @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
   items                 InvoiceItem[]

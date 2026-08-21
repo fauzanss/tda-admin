@@ -55,6 +55,7 @@ const formSchema = z.object({
   referencePoNumber: z.string().optional(),
   referenceBastSjNumber: z.string().optional(),
   customerReference: z.string().optional(),
+  taxInvoiceNumber: z.string().optional(),
   billingPhase: z.enum(["FULL", "TERMIN_90", "RETENTION_10"]).optional(),
   salesPerson: z.string().optional(),
   taxId: z.string().optional(),
@@ -115,6 +116,7 @@ function buildDocumentInput(formData: FormData) {
     referencePoNumber: String(formData.get("referencePoNumber") ?? ""),
     referenceBastSjNumber: String(formData.get("referenceBastSjNumber") ?? ""),
     customerReference: String(formData.get("customerReference") ?? ""),
+    taxInvoiceNumber: String(formData.get("taxInvoiceNumber") ?? ""),
     billingPhase: String(formData.get("billingPhase") ?? "FULL"),
     salesPerson: String(formData.get("salesPerson") ?? ""),
     taxId: String(formData.get("taxId") ?? ""),
@@ -161,6 +163,7 @@ function buildDocumentInput(formData: FormData) {
     referencePoNumber: toNullable(payload.referencePoNumber),
     referenceBastSjNumber: toNullable(payload.referenceBastSjNumber),
     customerReference: toNullable(payload.customerReference),
+    taxInvoiceNumber: toNullable(payload.taxInvoiceNumber),
     billingPhase: parseBillingPhase(payload.billingPhase),
     salesPerson: toNullable(payload.salesPerson),
     taxId: toNullable(payload.taxId),
@@ -225,6 +228,10 @@ async function applyPurchaseOrderGdrive(purchaseOrderId: string, formData: FormD
   });
 }
 
+function taxGdriveFromForm(formData: FormData) {
+  return parseGdriveLinkFormFields(formData) ?? {};
+}
+
 async function persistPurchaseOrderPaymentExtras(
   purchaseOrderId: string,
   formData: FormData,
@@ -243,7 +250,7 @@ async function persistPurchaseOrderPaymentExtras(
   await replacePurchaseOrderLinks(purchaseOrderId, extras.linkedPoMasukIds);
 }
 
-async function createByType(input: DocumentInput, userId: string) {
+async function createByType(input: DocumentInput, userId: string, formData?: FormData) {
   if (input.type === "INVOICE") {
     return prisma.invoice.create({
       data: {
@@ -255,6 +262,7 @@ async function createByType(input: DocumentInput, userId: string) {
         referencePoNumber: input.referencePoNumber,
         referenceBastSjNumber: input.referenceBastSjNumber,
         customerReference: input.customerReference,
+        taxInvoiceNumber: input.taxInvoiceNumber,
         billingPhase: input.billingPhase,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
@@ -264,6 +272,7 @@ async function createByType(input: DocumentInput, userId: string) {
         deliveredToName: input.deliveredToName,
         deliveredToAddress: input.deliveredToAddress,
         withSignature: input.withSignature,
+        ...(formData ? taxGdriveFromForm(formData) : {}),
         createdById: userId,
         items: { create: input.lines },
       },
@@ -398,7 +407,7 @@ export async function createDocument(formData: FormData) {
         }
       : input;
 
-  const document = await createByType(createInput, userId);
+  const document = await createByType(createInput, userId, formData);
 
   if (input.type === "PURCHASE_ORDER") {
     const lineTotal = sumLineItemsTotal(input.lines);
@@ -436,6 +445,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         referencePoNumber: input.referencePoNumber,
         referenceBastSjNumber: input.referenceBastSjNumber,
         customerReference: input.customerReference,
+        taxInvoiceNumber: input.taxInvoiceNumber,
         billingPhase: input.billingPhase,
         salesPerson: input.salesPerson,
         taxId: input.taxId,
@@ -445,6 +455,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         deliveredToName: input.deliveredToName,
         deliveredToAddress: input.deliveredToAddress,
         withSignature: input.withSignature,
+        ...taxGdriveFromForm(formData),
         items: { deleteMany: {}, create: input.lines },
       },
     });

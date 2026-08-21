@@ -156,6 +156,7 @@ export async function DocumentPreviewView({
   const referencePoNumber = "referencePoNumber" in document ? document.referencePoNumber : null;
   const referenceBastSjNumber = "referenceBastSjNumber" in document ? document.referenceBastSjNumber : null;
   const billingPhase = "billingPhase" in document ? document.billingPhase : null;
+  const taxInvoiceNumber = "taxInvoiceNumber" in document ? document.taxInvoiceNumber : null;
   const subject = "subject" in document ? document.subject : null;
   const billToName =
     "billToName" in document
@@ -261,6 +262,12 @@ export async function DocumentPreviewView({
             </div>
           )}
           {referenceBastSjNumber && <div className="info-row"><span className="info-label">{t.bastSjNo}</span><span className="info-value">: {referenceBastSjNumber}</span></div>}
+          {type === "INVOICE" && taxInvoiceNumber && (
+            <div className="info-row">
+              <span className="info-label">{t.taxInvoiceNo}</span>
+              <span className="info-value">: {taxInvoiceNumber}</span>
+            </div>
+          )}
           {(type === "INVOICE" || type === "PERFORM_INVOICE") && billingPhase && (
             <div className="info-row">
               <span className="info-label">{t.billingPhase}</span>

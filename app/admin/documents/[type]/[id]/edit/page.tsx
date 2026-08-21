@@ -3,6 +3,7 @@ import Link from "next/link";
 import { convertPerformInvoiceToInvoice, finalizeDocument, updateDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
 import { asDocumentType } from "@/app/admin/documents/document-type";
+import { GdriveFilePreviewPanel } from "@/app/admin/po/PoPanels";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { Alert } from "@/components/ui/alert";
@@ -119,12 +120,15 @@ export default async function EditDocumentPage({
     referenceBastSjNumber:
       "referenceBastSjNumber" in document ? document.referenceBastSjNumber ?? null : null,
     customerReference: "customerReference" in document ? document.customerReference ?? null : null,
+    taxInvoiceNumber: "taxInvoiceNumber" in document ? document.taxInvoiceNumber ?? null : null,
     billingPhase: "billingPhase" in document ? document.billingPhase : undefined,
     salesPerson: "salesPerson" in document ? document.salesPerson ?? null : null,
     taxId: "taxId" in document ? document.taxId ?? null : null,
     paymentTerms: "paymentTerms" in document ? document.paymentTerms ?? null : null,
     offerKind: "offerKind" in document ? document.offerKind : undefined,
     deliveryNotes: "deliveryNotes" in document ? document.deliveryNotes ?? null : null,
+    gdriveWebViewLink: "gdriveWebViewLink" in document ? document.gdriveWebViewLink ?? null : null,
+    gdriveFileName: "gdriveFileName" in document ? document.gdriveFileName ?? null : null,
     billToName:
       "billToName" in document
         ? document.billToName ?? null
@@ -157,6 +161,20 @@ export default async function EditDocumentPage({
     })),
   };
 
+  const invoiceTaxGdrive =
+    type === "INVOICE" && "gdriveFileId" in document && document.gdriveFileId
+      ? {
+          fileId: document.gdriveFileId as string,
+          fileName: "gdriveFileName" in document ? document.gdriveFileName ?? null : null,
+          webViewLink:
+            "gdriveWebViewLink" in document ? document.gdriveWebViewLink ?? null : null,
+        }
+      : null;
+  const invoiceTaxGdriveUrl = invoiceTaxGdrive
+    ? invoiceTaxGdrive.webViewLink ??
+      `https://drive.google.com/file/d/${invoiceTaxGdrive.fileId}/view`
+    : null;
+
   return (
     <main>
       {resolvedSearchParams.updated === "1" && (
@@ -176,6 +194,16 @@ export default async function EditDocumentPage({
             >
               Preview
             </Link>
+            {invoiceTaxGdriveUrl && (
+              <a
+                href={invoiceTaxGdriveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                Preview Faktur Pajak
+              </a>
+            )}
             {type === "PERFORM_INVOICE" && !linkedInvoice && (
               <form action={onConvertToInvoice}>
                 <SubmitButton variant="secondary" size="sm" pendingLabel="Converting...">
@@ -201,6 +229,14 @@ export default async function EditDocumentPage({
           </>
         }
       />
+      {invoiceTaxGdrive && (
+        <GdriveFilePreviewPanel
+          fileId={invoiceTaxGdrive.fileId}
+          fileName={invoiceTaxGdrive.fileName}
+          webViewLink={invoiceTaxGdrive.webViewLink}
+          titlePrefix="Faktur Pajak"
+        />
+      )}
       <DocumentForm
         type={type}
         companies={companies}

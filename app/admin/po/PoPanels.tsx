@@ -165,10 +165,12 @@ export function GdriveFilePreviewPanel({
   fileId,
   fileName,
   webViewLink,
+  titlePrefix = "PO File",
 }: Readonly<{
   fileId: string;
   fileName?: string | null;
   webViewLink?: string | null;
+  titlePrefix?: string;
 }>) {
   const viewUrl = webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`;
   const embedUrl = getGoogleDrivePreviewUrl(fileId);
@@ -178,7 +180,9 @@ export function GdriveFilePreviewPanel({
     <section className="mb-4">
       <Card>
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="border-0 p-0">PO File — {title}</CardTitle>
+          <CardTitle className="border-0 p-0">
+            {titlePrefix} — {title}
+          </CardTitle>
           <a
             href={viewUrl}
             target="_blank"
