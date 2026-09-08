@@ -27,6 +27,7 @@ enum DocumentStatus {
 
 enum BillingPhase {
   FULL
+  TERMIN
   TERMIN_90
   RETENTION_10
 }

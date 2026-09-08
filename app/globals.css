@@ -48,10 +48,13 @@ body {
 
 .doc-preview ul {
   margin: 0;
+  padding-left: 1.25em;
+  list-style-type: disc;
 }
 
 .doc-preview li {
   line-height: 1.15;
+  list-style-type: disc;
 }
 
 .doc-section {

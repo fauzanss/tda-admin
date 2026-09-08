@@ -48,31 +48,61 @@ function renderAddress(name?: string | null, address?: string | null) {
   );
 }
 
+function renderBulletList(text: string, className?: string) {
+  const points = parseNotes(text);
+
+  if (points.length === 0) {
+    return null;
+  }
+
+  // Prefer explicit "- " markers: Tailwind preflight sets list-style: none.
+  if (points.length === 1) {
+    return <div className={className}>{points[0]}</div>;
+  }
+
+  return (
+    <div className={className}>
+      {points.map((point, idx) => (
+        <div key={`${idx}-${point}`}>- {point}</div>
+      ))}
+    </div>
+  );
+}
+
+function renderDescription(type: string, description: string) {
+  if (type === "PERFORM_INVOICE" || type === "INVOICE") {
+    const points = parseNotes(description);
+    if (points.length === 0) {
+      return null;
+    }
+    if (points.length === 1) {
+      return <div>{points[0]}</div>;
+    }
+
+    const [title, ...rest] = points;
+    return (
+      <div>
+        <div>{title}</div>
+        {rest.map((point, idx) => (
+          <div key={`${idx}-${point}`}>- {point}</div>
+        ))}
+      </div>
+    );
+  }
+
+  return <div>{description}</div>;
+}
+
 function renderDetail(type: string, detail?: string | null) {
   if (!detail) {
     return null;
   }
 
-  if (type === "SPH") {
-    const points = detail
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (points.length === 0) {
-      return null;
-    }
-
-    return (
-      <ul className="line-detail mb-0 ps-3">
-        {points.map((point, idx) => (
-          <li key={`${idx}-${String(point)}`}>{String(point)}</li>
-        ))}
-      </ul>
-    );
+  if (type === "SPH" || type === "PERFORM_INVOICE" || type === "INVOICE") {
+    return renderBulletList(detail, "line-detail");
   }
 
-  return <div className="line-detail">{detail}</div>;
+  return <div className="line-detail whitespace-pre-line">{detail}</div>;
 }
 
 function documentNumberLabel(type: DocumentType, t: ReturnType<typeof getDocumentStrings>) {
@@ -338,7 +368,7 @@ export async function DocumentPreviewView({
                   <tr key={line.id}>
                     <td className="text-center">{index + 1}</td>
                     <td>
-                      <div>{line.description}</div>
+                      {renderDescription(type, line.description)}
                       {line.detail && <div className="line-detail">{line.detail}</div>}
                     </td>
                     <td className="text-center">{Number(line.quantity)}</td>
@@ -351,7 +381,7 @@ export async function DocumentPreviewView({
               return (
                 <tr key={line.id}>
                   <td>
-                    <div>{line.description}</div>
+                    {renderDescription(type, line.description)}
                     {renderDetail(type, line.detail)}
                   </td>
                   <td className={`text-center${type === "SPH" ? " col-qty" : ""}`}>

@@ -76,7 +76,7 @@ export default async function NewDocumentPage({
           referenceBastSjNumber: null,
           customerReference: null,
           taxInvoiceNumber: null,
-          billingPhase: "TERMIN_90" as const,
+          billingPhase: "TERMIN" as const,
           salesPerson: null,
           taxId: null,
           paymentTerms: defaultIdrPaymentTransfer,

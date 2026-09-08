@@ -363,7 +363,7 @@ export function DocumentForm({
                 <Select
                   id="billingPhase"
                   name="billingPhase"
-                  defaultValue={defaultValue?.billingPhase ?? "FULL"}
+                  defaultValue={defaultValue?.billingPhase ?? "TERMIN"}
                 >
                   {billingPhaseOptions.map((phase) => (
                     <option key={phase} value={phase}>
@@ -603,12 +603,22 @@ export function DocumentForm({
               <div key={index} className="mb-4 rounded-lg border border-slate-200 p-4">
                 <div className="mb-3">
                   <Label className="mb-1">{isSph ? "Item Name" : "Description"}</Label>
-                  <Input
-                    placeholder={isSph ? "Item Name" : "Description"}
-                    value={line.description}
-                    onChange={(event) => updateLine(index, { description: event.target.value })}
-                    required
-                  />
+                  {isInvoiceLike ? (
+                    <Textarea
+                      placeholder="Description (1 line = 1 bullet)"
+                      rows={4}
+                      value={line.description}
+                      onChange={(event) => updateLine(index, { description: event.target.value })}
+                      required
+                    />
+                  ) : (
+                    <Input
+                      placeholder={isSph ? "Item Name" : "Description"}
+                      value={line.description}
+                      onChange={(event) => updateLine(index, { description: event.target.value })}
+                      required
+                    />
+                  )}
                 </div>
                 <div className="mb-3">
                   <Label className="mb-1">Detail</Label>
@@ -618,7 +628,9 @@ export function DocumentForm({
                         ? "Details (1 line per point)"
                         : isSuratJalan
                           ? "Details / Serial / Condition"
-                          : "Details"
+                          : isInvoiceLike
+                            ? "Details (1 line = 1 bullet)"
+                            : "Details"
                     }
                     rows={4}
                     value={line.detail}
