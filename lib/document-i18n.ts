@@ -229,7 +229,7 @@ function buildStrings(
       sphIntroGreeting: locale === "EN" ? "Dear Sir/Madam," : "Dengan hormat,",
       sphIntroBody: (partnerName: string) =>
         locale === "EN"
-          ? `We, PT Transformasi Digital Abadi as an official partner of ${partnerName}, would like to submit the following quotation:`
+          ? `As an official partner of ${partnerName}, PT Transformasi Digital Abadi is pleased to submit the following quotation for your consideration:`
           : `Kami, PT Transformasi Digital Abadi sebagai mitra resmi ${partnerName}, dengan ini mengajukan penawaran sebagai berikut:`,
     },
   };
@@ -258,7 +258,7 @@ function buildStrings(
     sphIntroGreeting: locale === "EN" ? "Dear Sir/Madam," : "Dengan hormat,",
     sphIntroBody: (partnerName: string) =>
       locale === "EN"
-        ? `We, PT Transformasi Digital Abadi as an official partner of ${partnerName}, would like to submit the following quotation:`
+        ? `As an official partner of ${partnerName}, PT Transformasi Digital Abadi is pleased to submit the following quotation for your consideration:`
         : `Kami, PT Transformasi Digital Abadi sebagai mitra resmi ${partnerName}, dengan ini mengajukan penawaran sebagai berikut:`,
     documentTitle: type,
     ...typePart,
