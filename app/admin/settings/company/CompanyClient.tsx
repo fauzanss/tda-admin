@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil, Plus, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +20,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/cn";
 import { formatAppDateTime } from "@/lib/datetime";
+import { LIST_PAGE_SIZE } from "@/lib/list-pagination";
 
 type Company = {
   id: string;
@@ -30,6 +30,7 @@ type Company = {
   address: string;
   website: string | null;
   isActive: boolean;
+  createdAt?: string | Date;
   updatedAt: string | Date;
 };
 
@@ -41,6 +42,11 @@ type CompanyForm = {
   isActive: boolean;
 };
 
+type CompaniesResponse = {
+  items: Company[];
+  hasMore: boolean;
+};
+
 const defaultForm: CompanyForm = {
   companyName: "",
   companyAlias: "",
@@ -49,14 +55,72 @@ const defaultForm: CompanyForm = {
   isActive: true,
 };
 
-export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies: Company[] }>) {
+async function fetchCompanies(q: string, skip: number): Promise<CompaniesResponse> {
+  const params = new URLSearchParams({
+    skip: String(skip),
+    take: String(LIST_PAGE_SIZE),
+  });
+  if (q) {
+    params.set("q", q);
+  }
+  const response = await fetch(`/api/companies?${params.toString()}`, { cache: "no-store" });
+  return (await response.json()) as CompaniesResponse;
+}
+
+export function CompanyClient({
+  initialCompanies,
+  initialHasMore,
+}: Readonly<{
+  initialCompanies: Company[];
+  initialHasMore: boolean;
+}>) {
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [nameQuery, setNameQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
   const [form, setForm] = useState<CompanyForm>(defaultForm);
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const skipInitialFilterFetch = useRef(true);
 
   const modalTitle = useMemo(() => (editing ? "Edit Company" : "Add Company"), [editing]);
+
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => {
+      setDebouncedQuery(nameQuery.trim());
+    }, 300);
+    return () => globalThis.clearTimeout(timer);
+  }, [nameQuery]);
+
+  useEffect(() => {
+    if (skipInitialFilterFetch.current) {
+      skipInitialFilterFetch.current = false;
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setLoadingList(true);
+      try {
+        const result = await fetchCompanies(debouncedQuery, 0);
+        if (!cancelled) {
+          setCompanies(result.items);
+          setHasMore(result.hasMore);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingList(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
 
   function openAdd() {
     setEditing(null);
@@ -77,9 +141,20 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
   }
 
   async function refreshCompanies() {
-    const response = await fetch("/api/companies", { cache: "no-store" });
-    const rows = (await response.json()) as Company[];
-    setCompanies(rows);
+    const result = await fetchCompanies(debouncedQuery, 0);
+    setCompanies(result.items);
+    setHasMore(result.hasMore);
+  }
+
+  async function handleLoadMore() {
+    setLoadingMore(true);
+    try {
+      const result = await fetchCompanies(debouncedQuery, companies.length);
+      setCompanies((current) => [...current, ...result.items]);
+      setHasMore(result.hasMore);
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   async function handleSubmit(event: { preventDefault: () => void }) {
@@ -133,6 +208,16 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
         }
       />
 
+      <div className="mb-3 max-w-sm">
+        <Label htmlFor="company-name-filter">Filter by name</Label>
+        <Input
+          id="company-name-filter"
+          placeholder="Search company name..."
+          value={nameQuery}
+          onChange={(event) => setNameQuery(event.target.value)}
+        />
+      </div>
+
       <Card>
         <Table>
           <TableHeader>
@@ -147,52 +232,74 @@ export function CompanyClient({ initialCompanies }: Readonly<{ initialCompanies:
             </TableRow>
           </TableHeader>
           <TableBody>
-            {companies.length === 0 && (
+            {loadingList && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-tda-navy-muted">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            )}
+            {!loadingList && companies.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="text-tda-navy-muted">
                   No data available.
                 </TableCell>
               </TableRow>
             )}
-            {companies.map((company) => (
-              <TableRow key={company.id}>
-                <TableCell>{company.companyName}</TableCell>
-                <TableCell>{company.companyAlias || "-"}</TableCell>
-                <TableCell className="whitespace-pre-line">{company.address}</TableCell>
-                <TableCell>{company.website || "-"}</TableCell>
-                <TableCell>
-                  <Badge variant={company.isActive ? "success" : "muted"}>
-                    {company.isActive ? "Yes" : "No"}
-                  </Badge>
-                </TableCell>
-                <TableCell>{formatAppDateTime(company.updatedAt)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Edit company"
-                      onClick={() => openEdit(company)}
-                    >
-                      <Pencil size={16} aria-hidden />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                      aria-label="Delete company"
-                      onClick={() => handleDelete(company.id)}
-                    >
-                      <Trash2 size={16} aria-hidden />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {!loadingList &&
+              companies.map((company) => (
+                <TableRow key={company.id}>
+                  <TableCell>{company.companyName}</TableCell>
+                  <TableCell>{company.companyAlias || "-"}</TableCell>
+                  <TableCell className="whitespace-pre-line">{company.address}</TableCell>
+                  <TableCell>{company.website || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={company.isActive ? "success" : "muted"}>
+                      {company.isActive ? "Yes" : "No"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{formatAppDateTime(company.updatedAt)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Edit company"
+                        onClick={() => openEdit(company)}
+                      >
+                        <Pencil size={16} aria-hidden />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                        aria-label="Delete company"
+                        onClick={() => handleDelete(company.id)}
+                      >
+                        <Trash2 size={16} aria-hidden />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
+        {hasMore && !loadingList && (
+          <div className="flex justify-center border-t border-slate-100 px-4 py-3">
+            <Button type="button" variant="outline" onClick={handleLoadMore} disabled={loadingMore}>
+              {loadingMore ? (
+                <>
+                  <Spinner size={16} className="text-current" />
+                  Loading...
+                </>
+              ) : (
+                "Load more"
+              )}
+            </Button>
+          </div>
+        )}
       </Card>
 
       {showModal && (

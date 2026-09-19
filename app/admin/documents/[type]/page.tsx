@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { CompanyListFilter } from "@/app/admin/documents/CompanyListFilter";
 import { DeleteDocumentButton } from "@/app/admin/documents/DeleteDocumentButton";
 import { DuplicateDocumentButton } from "@/app/admin/documents/DuplicateDocumentButton";
+import { SphDocumentList } from "@/app/admin/documents/SphDocumentList";
 import { asDocumentType } from "@/app/admin/documents/document-type";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -25,6 +26,7 @@ import { documentTypeLabels } from "@/lib/document-meta";
 import { getBillingPhaseLabel } from "@/lib/billing-phase";
 import { getDocumentEditPath, getDocumentNewPath, getDocumentPreviewPath } from "@/lib/document-paths";
 import { destinationNameFilter, stringFieldInNames } from "@/lib/company-destination-filter";
+import { LIST_PAGE_SIZE, paginateTakePlusOne } from "@/lib/list-pagination";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 import { getServerSession } from "next-auth";
@@ -70,6 +72,55 @@ export default async function DocumentListPage({
   const destinationNames = destinationNameFilter(selectedCompany);
   const nameFilter = stringFieldInNames(destinationNames);
 
+  const header = (
+    <PageHeader
+      title={documentTypeLabels[type]}
+      actions={
+        <>
+          <CompanyListFilter companies={companies} selectedId={selectedCompany?.id ?? ""} />
+          {canWrite ? (
+            <Link href={getDocumentNewPath(type)} className={cn(buttonVariants())}>
+              + New Document
+            </Link>
+          ) : null}
+        </>
+      }
+    />
+  );
+
+  if (type === "SPH") {
+    const rows = await prisma.sph.findMany({
+      where: {
+        ...notDeleted,
+        ...(nameFilter ? { recipientCompany: nameFilter } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: LIST_PAGE_SIZE + 1,
+      select: {
+        id: true,
+        documentNumber: true,
+        recipientCompany: true,
+        issueDate: true,
+        updatedAt: true,
+        status: true,
+      },
+    });
+    const { items, hasMore } = paginateTakePlusOne(rows, LIST_PAGE_SIZE);
+
+    return (
+      <main>
+        {header}
+        <SphDocumentList
+          key={selectedCompany?.id ?? "all"}
+          initialDocuments={items}
+          initialHasMore={hasMore}
+          selectedCompanyId={selectedCompany?.id ?? ""}
+          canWrite={canWrite}
+        />
+      </main>
+    );
+  }
+
   let documents;
   if (type === "INVOICE") {
     documents = await prisma.invoice.findMany({
@@ -81,14 +132,9 @@ export default async function DocumentListPage({
       where: { ...notDeleted, ...(nameFilter ? { billToName: nameFilter } : {}) },
       orderBy: { createdAt: "desc" },
     });
-  } else if (type === "SURAT_JALAN") {
+  } else {
     documents = await prisma.suratJalan.findMany({
       where: { ...notDeleted, ...(nameFilter ? { toName: nameFilter } : {}) },
-      orderBy: { createdAt: "desc" },
-    });
-  } else {
-    documents = await prisma.sph.findMany({
-      where: { ...notDeleted, ...(nameFilter ? { recipientCompany: nameFilter } : {}) },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -97,19 +143,7 @@ export default async function DocumentListPage({
 
   return (
     <main>
-      <PageHeader
-        title={documentTypeLabels[type]}
-        actions={
-          <>
-            <CompanyListFilter companies={companies} selectedId={selectedCompany?.id ?? ""} />
-            {canWrite ? (
-              <Link href={getDocumentNewPath(type)} className={cn(buttonVariants())}>
-                + New Document
-              </Link>
-            ) : null}
-          </>
-        }
-      />
+      {header}
 
       <Card>
         <Table>
