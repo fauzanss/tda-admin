@@ -1,8 +1,6 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "edge") {
-    return;
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { registerNode } = await import("./instrumentation.node");
+    await registerNode();
   }
-
-  const { checkDatabaseConnection } = await import("@/lib/db-connection");
-  await checkDatabaseConnection();
 }
