@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { notFound, redirect } from "next/navigation";
 
 import { convertPerformInvoiceToInvoice, finalizeDocument, updateDocument } from "@/app/admin/documents/actions";
 import { DocumentForm } from "@/app/admin/documents/DocumentForm";
@@ -8,15 +10,34 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { Alert } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
+import type { DocumentType } from "@/generated/prisma/client";
+import { authOptions } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { documentTypeLabels } from "@/lib/document-meta";
 import { getDocumentEditPath, getDocumentListPath, getDocumentPreviewPath } from "@/lib/document-paths";
-import { authOptions } from "@/lib/auth";
-import { canWriteFiles } from "@/lib/role-guards";
 import { prisma } from "@/lib/prisma";
+import { canWriteFiles } from "@/lib/role-guards";
 import { notDeleted } from "@/lib/soft-delete";
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+
+async function loadEditableDocument(type: DocumentType, id: string) {
+  const query = {
+    where: { id, ...notDeleted },
+    include: { items: { orderBy: { sortOrder: "asc" as const } } },
+  };
+
+  switch (type) {
+    case "INVOICE":
+      return prisma.invoice.findFirst(query);
+    case "PERFORM_INVOICE":
+      return prisma.performInvoice.findFirst(query);
+    case "SURAT_JALAN":
+      return prisma.suratJalan.findFirst(query);
+    case "SPH":
+      return prisma.sph.findFirst(query);
+    default:
+      return null;
+  }
+}
 
 export default async function EditDocumentPage({
   params,
@@ -58,26 +79,22 @@ export default async function EditDocumentPage({
       deliveredToAddress: true,
     },
   });
-  const document =
-    type === "INVOICE"
-      ? await prisma.invoice.findFirstOrThrow({
-          where: { id: resolved.id, ...notDeleted },
-          include: { items: { orderBy: { sortOrder: "asc" } } },
-        })
-      : type === "PERFORM_INVOICE"
-        ? await prisma.performInvoice.findFirstOrThrow({
-            where: { id: resolved.id, ...notDeleted },
-            include: { items: { orderBy: { sortOrder: "asc" } } },
+  const incomingPos =
+    type === "SURAT_JALAN"
+      ? (
+          await prisma.poMasuk.findMany({
+            where: { ...notDeleted, poNumber: { not: null } },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, poNumber: true },
           })
-      : type === "SURAT_JALAN"
-        ? await prisma.suratJalan.findFirstOrThrow({
-            where: { id: resolved.id, ...notDeleted },
-            include: { items: { orderBy: { sortOrder: "asc" } } },
-          })
-        : await prisma.sph.findFirstOrThrow({
-            where: { id: resolved.id, ...notDeleted },
-            include: { items: { orderBy: { sortOrder: "asc" } } },
-          });
+        ).flatMap((po) => (po.poNumber ? [{ id: po.id, poNumber: po.poNumber }] : []))
+      : [];
+  const loadedDocument = await loadEditableDocument(type, resolved.id);
+  if (!loadedDocument) {
+    notFound();
+  }
+  const document = loadedDocument;
+  const documentId = document.id;
 
   let linkedInvoice: { id: string; documentNumber: string | null } | null = null;
   if (type === "PERFORM_INVOICE" && "convertedToInvoiceId" in document && document.convertedToInvoiceId) {
@@ -87,7 +104,7 @@ export default async function EditDocumentPage({
     });
     if (!linkedInvoice) {
       await prisma.performInvoice.update({
-        where: { id: document.id },
+        where: { id: documentId },
         data: { convertedToInvoiceId: null },
       });
     }
@@ -95,17 +112,17 @@ export default async function EditDocumentPage({
 
   async function onSubmit(formData: FormData) {
     "use server";
-    await updateDocument(document.id, formData);
+    await updateDocument(documentId, formData);
   }
 
   async function onFinalize() {
     "use server";
-    await finalizeDocument(type, document.id);
+    await finalizeDocument(type, documentId);
   }
 
   async function onConvertToInvoice() {
     "use server";
-    await convertPerformInvoiceToInvoice(document.id);
+    await convertPerformInvoiceToInvoice(documentId);
   }
 
   const defaultValue = {
@@ -241,6 +258,7 @@ export default async function EditDocumentPage({
         type={type}
         companies={companies}
         purchaseOrders={purchaseOrders}
+        incomingPos={incomingPos}
         defaultValue={defaultValue}
         duplicateInfo={defaultValue.duplicatedFromNumber}
         onSubmit={onSubmit}

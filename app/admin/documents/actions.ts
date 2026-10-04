@@ -601,10 +601,7 @@ export async function finalizeDocument(type: DocumentType, id: string) {
   } else if (type === "SURAT_JALAN") {
     const doc = await prisma.suratJalan.findFirstOrThrow({ where: { id, ...notDeleted } });
     const number =
-      doc.documentNumber ??
-      (await generateDocumentNumber(type, doc.issueDate, {
-        clientName: doc.toName,
-      }));
+      doc.documentNumber ?? (await generateDocumentNumber("SURAT_JALAN", doc.issueDate));
     await prisma.suratJalan.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else if (type === "PERFORM_INVOICE") {
     const doc = await prisma.performInvoice.findFirstOrThrow({ where: { id, ...notDeleted } });

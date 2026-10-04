@@ -57,6 +57,16 @@ export default async function NewDocumentPage({
       deliveredToAddress: true,
     },
   });
+  const incomingPos =
+    type === "SURAT_JALAN"
+      ? (
+          await prisma.poMasuk.findMany({
+            where: { ...notDeleted, poNumber: { not: null } },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, poNumber: true },
+          })
+        ).flatMap((po) => (po.poNumber ? [{ id: po.id, poNumber: po.poNumber }] : []))
+      : [];
 
   async function onSubmit(formData: FormData) {
     "use server";
@@ -111,6 +121,7 @@ export default async function NewDocumentPage({
         type={type}
         companies={companies}
         purchaseOrders={purchaseOrders}
+        incomingPos={incomingPos}
         defaultValue={defaultValue}
         onSubmit={onSubmit}
         submitLabel={type === "SPH" || type === "PERFORM_INVOICE" || type === "INVOICE" ? "Save" : "Save Draft"}

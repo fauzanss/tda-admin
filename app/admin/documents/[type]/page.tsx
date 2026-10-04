@@ -48,6 +48,18 @@ function getCompanyName(
   return doc.recipientCompany ?? "-";
 }
 
+function formatPoReferenceLabel(
+  referencePoNumber: string | null | undefined,
+  outgoingNumbers: Set<string>,
+  incomingNumbers: Set<string>,
+) {
+  const value = referencePoNumber?.trim();
+  if (!value) return "-";
+  if (outgoingNumbers.has(value)) return `${value} - (Outgoing PO)`;
+  if (incomingNumbers.has(value)) return `${value} - (Incoming PO)`;
+  return value;
+}
+
 export default async function DocumentListPage({
   params,
   searchParams,
@@ -140,6 +152,42 @@ export default async function DocumentListPage({
   }
 
   const showBillingPhase = type === "INVOICE" || type === "PERFORM_INVOICE";
+  const showPoReference = type === "SURAT_JALAN";
+  const columnCount = 6 + (showBillingPhase ? 1 : 0) + (showPoReference ? 1 : 0);
+
+  let outgoingPoNumbers = new Set<string>();
+  let incomingPoNumbers = new Set<string>();
+  if (showPoReference) {
+    const referenceNumbers = [
+      ...new Set(
+        documents
+          .map((doc) => ("referencePoNumber" in doc ? doc.referencePoNumber?.trim() : ""))
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ];
+    if (referenceNumbers.length > 0) {
+      const [outgoingRows, incomingRows] = await Promise.all([
+        prisma.purchaseOrder.findMany({
+          where: { ...notDeleted, documentNumber: { in: referenceNumbers } },
+          select: { documentNumber: true },
+        }),
+        prisma.poMasuk.findMany({
+          where: { ...notDeleted, poNumber: { in: referenceNumbers } },
+          select: { poNumber: true },
+        }),
+      ]);
+      outgoingPoNumbers = new Set(
+        outgoingRows
+          .map((row) => row.documentNumber?.trim())
+          .filter((value): value is string => Boolean(value)),
+      );
+      incomingPoNumbers = new Set(
+        incomingRows
+          .map((row) => row.poNumber?.trim())
+          .filter((value): value is string => Boolean(value)),
+      );
+    }
+  }
 
   return (
     <main>
@@ -151,6 +199,7 @@ export default async function DocumentListPage({
             <TableRow>
               <TableHead>No</TableHead>
               <TableHead>Company Name</TableHead>
+              {showPoReference && <TableHead>PO Number</TableHead>}
               {showBillingPhase && <TableHead>Billing</TableHead>}
               <TableHead>Date</TableHead>
               <TableHead>Last Updated</TableHead>
@@ -161,7 +210,7 @@ export default async function DocumentListPage({
           <TableBody>
             {documents.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showBillingPhase ? 7 : 6} className="p-0">
+                <TableCell colSpan={columnCount} className="p-0">
                   <EmptyState />
                 </TableCell>
               </TableRow>
@@ -170,6 +219,15 @@ export default async function DocumentListPage({
               <TableRow key={doc.id}>
                 <TableCell>{doc.documentNumber ?? "-"}</TableCell>
                 <TableCell>{getCompanyName(type, doc)}</TableCell>
+                {showPoReference && (
+                  <TableCell>
+                    {formatPoReferenceLabel(
+                      "referencePoNumber" in doc ? doc.referencePoNumber : null,
+                      outgoingPoNumbers,
+                      incomingPoNumbers,
+                    )}
+                  </TableCell>
+                )}
                 {showBillingPhase && (
                   <TableCell>
                     {"billingPhase" in doc && doc.billingPhase !== "FULL" ? (

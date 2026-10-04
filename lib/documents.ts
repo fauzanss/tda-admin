@@ -3,14 +3,15 @@ import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
-const slashNumberedTypes = new Set<DocumentType>(["SPH", "PERFORM_INVOICE", "INVOICE"]);
+const slashNumberedTypes = new Set<DocumentType>([
+  "SPH",
+  "PERFORM_INVOICE",
+  "INVOICE",
+  "SURAT_JALAN",
+]);
 
-const documentNumberPrefixes: Record<
-  Exclude<DocumentType, "SPH" | "PERFORM_INVOICE" | "INVOICE">,
-  string
-> = {
+const documentNumberPrefixes: Record<"PURCHASE_ORDER", string> = {
   PURCHASE_ORDER: "PO",
-  SURAT_JALAN: "DO",
 };
 
 function buildClientSlug(name: string | null | undefined) {
@@ -43,6 +44,10 @@ export function toRomanMonth(month: number) {
 
 export function formatInvoiceDocumentNumber(sequence: number, month: number, year: number) {
   return `INV/TDA/${String(sequence).padStart(3, "0")}/${toRomanMonth(month)}/${year}`;
+}
+
+export function formatDeliveryNoteDocumentNumber(sequence: number, month: number, year: number) {
+  return `DO/TDA/${toRomanMonth(month)}/${year}/${String(sequence).padStart(3, "0")}`;
 }
 
 async function listDocumentNumbersForSequencing(
@@ -108,6 +113,24 @@ function nextInvoiceSequence(
   }, 0);
 }
 
+function nextDeliveryNoteSequence(
+  rows: Array<{ documentNumber: string | null }>,
+  month: number,
+  year: number,
+) {
+  const roman = toRomanMonth(month);
+  const pattern = new RegExp(String.raw`^DO/TDA/${roman}/${year}/(\d+)$`);
+  return rows.reduce((max, row) => {
+    const value = row.documentNumber;
+    if (!value) return max;
+    const match = pattern.exec(value);
+    if (!match) return max;
+    const seq = Number(match[1]);
+    if (Number.isNaN(seq)) return max;
+    return Math.max(max, seq);
+  }, 0);
+}
+
 export async function generateDocumentNumber(
   type: DocumentType,
   date: Date,
@@ -122,6 +145,19 @@ export async function generateDocumentNumber(
     const monthEnd = new Date(year, month + 1, 1);
     const invoiceRows = await listDocumentNumbersForSequencing(type, monthStart, monthEnd);
     return formatInvoiceDocumentNumber(nextInvoiceSequence(invoiceRows, monthNumber, year) + 1, monthNumber, year);
+  }
+
+  if (type === "SURAT_JALAN") {
+    const month = date.getMonth();
+    const monthNumber = month + 1;
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 1);
+    const deliveryNoteRows = await listDocumentNumbersForSequencing(type, monthStart, monthEnd);
+    return formatDeliveryNoteDocumentNumber(
+      nextDeliveryNoteSequence(deliveryNoteRows, monthNumber, year) + 1,
+      monthNumber,
+      year,
+    );
   }
 
   const yearStart = new Date(year, 0, 1);

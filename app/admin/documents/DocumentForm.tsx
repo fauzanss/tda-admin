@@ -129,6 +129,11 @@ type PurchaseOrderOption = {
   deliveredToAddress: string | null;
 };
 
+type IncomingPoOption = {
+  id: string;
+  poNumber: string;
+};
+
 function emptyLine(): FormLine {
   return {
     description: "",
@@ -144,6 +149,7 @@ export function DocumentForm({
   type,
   companies,
   purchaseOrders,
+  incomingPos = [],
   incomingPoOptions = [],
   defaultValue,
   duplicateInfo,
@@ -153,6 +159,7 @@ export function DocumentForm({
   type: DocumentType;
   companies: CompanyOption[];
   purchaseOrders?: PurchaseOrderOption[];
+  incomingPos?: IncomingPoOption[];
   incomingPoOptions?: PoLinkOption[];
   defaultValue?: DocumentWithLines;
   duplicateInfo?: string | null;
@@ -247,16 +254,38 @@ export function DocumentForm({
     if (element && value) element.value = value;
   }
 
-  function applyPoReference(poId: string) {
-    const selected = purchaseOrders?.find((item) => item.id === poId);
-    if (!selected) return;
+  function applyPoReference(optionValue: string) {
+    if (optionValue.startsWith("out:")) {
+      const selected = purchaseOrders?.find((item) => item.id === optionValue.slice(4));
+      if (!selected) return;
 
-    applyTextValue("referencePoNumber", selected.documentNumber ?? "");
-    applyTextValue("fromName", selected.orderToName ?? "");
-    applyTextValue("fromAddress", selected.orderToAddress ?? "", true);
-    applyTextValue("toName", selected.deliveredToName ?? "");
-    applyTextValue("toAddress", selected.deliveredToAddress ?? "", true);
+      applyTextValue("referencePoNumber", selected.documentNumber ?? "");
+      applyTextValue("fromName", selected.orderToName ?? "");
+      applyTextValue("fromAddress", selected.orderToAddress ?? "", true);
+      applyTextValue("toName", selected.deliveredToName ?? "");
+      applyTextValue("toAddress", selected.deliveredToAddress ?? "", true);
+      return;
+    }
+
+    if (optionValue.startsWith("in:")) {
+      const selected = incomingPos.find((item) => item.id === optionValue.slice(3));
+      if (!selected) return;
+      applyTextValue("referencePoNumber", selected.poNumber);
+    }
   }
+
+  const selectedSjPoReferenceValue = (() => {
+    const reference = defaultValue?.referencePoNumber?.trim();
+    if (!reference) return "";
+
+    const outgoing = purchaseOrders?.find((item) => item.documentNumber === reference);
+    if (outgoing) return `out:${outgoing.id}`;
+
+    const incoming = incomingPos.find((item) => item.poNumber === reference);
+    if (incoming) return `in:${incoming.id}`;
+
+    return "";
+  })();
 
   return (
     <form action={onSubmit}>
@@ -438,16 +467,18 @@ export function DocumentForm({
                 <Label htmlFor="sj-po-reference-select">PO Reference</Label>
                 <Select
                   id="sj-po-reference-select"
-                  defaultValue={
-                    purchaseOrders?.find((item) => item.documentNumber === defaultValue?.referencePoNumber)?.id ??
-                    ""
-                  }
+                  defaultValue={selectedSjPoReferenceValue}
                   onChange={(event) => applyPoReference(event.target.value)}
                 >
                   <option value="">Select PO Reference</option>
                   {(purchaseOrders ?? []).map((po) => (
-                    <option key={po.id} value={po.id}>
-                      {po.documentNumber ?? "(Draft PO)"}
+                    <option key={`out:${po.id}`} value={`out:${po.id}`}>
+                      {po.documentNumber ?? "(Draft PO)"} - (Outgoing PO)
+                    </option>
+                  ))}
+                  {incomingPos.map((po) => (
+                    <option key={`in:${po.id}`} value={`in:${po.id}`}>
+                      {po.poNumber} - (Incoming PO)
                     </option>
                   ))}
                 </Select>
