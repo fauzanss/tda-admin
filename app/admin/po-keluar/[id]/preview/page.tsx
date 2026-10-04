@@ -1,16 +1,33 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
 
 import { DocumentPreviewView } from "@/app/admin/documents/DocumentPreviewView";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { buttonVariants } from "@/components/ui/button";
 import { DocumentType } from "@/generated/prisma/client";
-import { getDocumentEditPath } from "@/lib/document-paths";
-import { canWriteFiles } from "@/lib/role-guards";
-import { prisma } from "@/lib/prisma";
-import { notDeleted } from "@/lib/soft-delete";
 import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
+import { getDocumentEditPath } from "@/lib/document-paths";
+import { buildDocumentPrintFileName } from "@/lib/print-file-name";
+import { prisma } from "@/lib/prisma";
+import { canWriteFiles } from "@/lib/role-guards";
+import { notDeleted } from "@/lib/soft-delete";
+
+export async function generateMetadata({
+  params,
+}: Readonly<{
+  params: Promise<{ id: string }>;
+}>): Promise<Metadata> {
+  const { id } = await params;
+  const document = await prisma.purchaseOrder.findFirst({
+    where: { id, ...notDeleted },
+    select: { documentNumber: true },
+  });
+  return {
+    title: buildDocumentPrintFileName(document?.documentNumber, DocumentType.PURCHASE_ORDER),
+  };
+}
 
 export default async function PoKeluarPreviewPage({
   params,

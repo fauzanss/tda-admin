@@ -8,6 +8,7 @@ import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verif
 import { getDocumentPreviewPath } from "@/lib/document-paths";
 import { getBillingPhaseLabel } from "@/lib/billing-phase";
 import { formatCurrency, formatCurrencyAmount, formatLongDate, parseNotes } from "@/lib/documents";
+import { buildDocumentPrintFileName } from "@/lib/print-file-name";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
 
@@ -245,11 +246,12 @@ export async function DocumentPreviewView({
   const sphPartnerName = (deliveredToName || "Netciti").trim();
   const previewUrl = await getRequestUrlForPath(getDocumentPreviewPath(type, id));
   const qrDataUrl = await getDocumentQrDataUrl(previewUrl);
+  const printFileName = buildDocumentPrintFileName(document.documentNumber, type);
 
   return (
     <main className="doc-preview-page relative bg-slate-200 p-4">
       <Suspense fallback={null}>
-        <PrintButton />
+        <PrintButton fileName={printFileName} />
       </Suspense>
       <article
         className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "PERFORM_INVOICE" ? " doc-preview--perform-invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
