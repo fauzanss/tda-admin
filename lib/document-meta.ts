@@ -11,7 +11,7 @@ export const documentTypeLabels: Record<DocumentType, string> = {
   INVOICE: "Invoice",
   PERFORM_INVOICE: "Perform Invoice",
   PURCHASE_ORDER: "Outgoing PO",
-  SURAT_JALAN: "Delivery Note",
+  SURAT_JALAN: "Delivery Note / BAST",
   SPH: "Quotation",
 };
 
