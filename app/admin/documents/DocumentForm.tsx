@@ -1,6 +1,13 @@
 "use client";
 
-import { DocumentLocale, DocumentType, PaymentTermType, SphOfferKind, type BillingPhase } from "@/generated/prisma/client";
+import {
+  DocumentLocale,
+  DocumentType,
+  PaymentTermType,
+  SphOfferKind,
+  SuratJalanKind,
+  type BillingPhase,
+} from "@/generated/prisma/client";
 import { useState } from "react";
 
 import { PaymentTermSection } from "@/app/admin/po/PaymentTermSection";
@@ -76,6 +83,7 @@ type DocumentWithLines = {
   issueDate: Date;
   dueDate: Date | null;
   documentNumber: string | null;
+  kind?: SuratJalanKind | null;
   referencePoNumber: string | null;
   referenceBastSjNumber: string | null;
   customerReference: string | null;
@@ -458,6 +466,17 @@ export function DocumentForm({
 
           {isSuratJalan && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="kind">Jenis</Label>
+                <Select
+                  id="kind"
+                  name="kind"
+                  defaultValue={defaultValue?.kind ?? "GOODS"}
+                >
+                  <option value="GOODS">Barang (Delivery Note)</option>
+                  <option value="SERVICE">Jasa (Berita Acara Serah Terima)</option>
+                </Select>
+              </div>
               <input
                 type="hidden"
                 name="referencePoNumber"

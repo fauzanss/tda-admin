@@ -133,6 +133,7 @@ export default async function EditDocumentPage({
     issueDate: document.issueDate,
     dueDate: "dueDate" in document ? document.dueDate ?? null : null,
     documentNumber: document.documentNumber ?? null,
+    kind: "kind" in document ? document.kind : undefined,
     referencePoNumber: "referencePoNumber" in document ? document.referencePoNumber ?? null : null,
     referenceBastSjNumber:
       "referenceBastSjNumber" in document ? document.referenceBastSjNumber ?? null : null,

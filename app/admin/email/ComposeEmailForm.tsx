@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { sendEmailAction, type SendEmailState } from "@/app/admin/email/actions";
+import { EmailRecipientsInput } from "@/app/admin/email/EmailRecipientsInput";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardBody } from "@/components/ui/card";
@@ -58,27 +59,28 @@ export function ComposeEmailForm({
             </Select>
           </div>
 
-          <div>
-            <Label htmlFor="to">To</Label>
-            <Input
-              id="to"
-              name="to"
-              type="text"
-              placeholder="name@example.com, other@example.com"
-              defaultValue={defaultTo ?? ""}
-              required
-            />
-          </div>
+          <EmailRecipientsInput
+            id="to"
+            name="to"
+            label="To"
+            defaultValue={defaultTo ?? ""}
+            placeholder="Type email, then press Enter, Space, comma, or ;"
+            required
+          />
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="cc">Cc</Label>
-              <Input id="cc" name="cc" type="text" />
-            </div>
-            <div>
-              <Label htmlFor="bcc">Bcc</Label>
-              <Input id="bcc" name="bcc" type="text" />
-            </div>
+            <EmailRecipientsInput
+              id="cc"
+              name="cc"
+              label="Cc"
+              placeholder="Type email, then press Enter, Space, comma, or ;"
+            />
+            <EmailRecipientsInput
+              id="bcc"
+              name="bcc"
+              label="Bcc"
+              placeholder="Type email, then press Enter, Space, comma, or ;"
+            />
           </div>
 
           <div>

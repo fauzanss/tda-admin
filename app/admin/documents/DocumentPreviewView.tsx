@@ -2,7 +2,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 
 import { PrintButton } from "@/app/admin/documents/PrintButton";
-import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType, SuratJalanKind } from "@/generated/prisma/client";
 import { getDocumentStrings, getSphClosingText } from "@/lib/document-i18n";
 import { getDocumentQrDataUrl, getRequestUrlForPath } from "@/lib/document-verify-qr";
 import { getDocumentPreviewPath } from "@/lib/document-paths";
@@ -154,7 +154,11 @@ export async function DocumentPreviewView({
             });
 
   const locale = (document.locale ?? "ID") as DocumentLocale;
-  const t = getDocumentStrings(locale, type);
+  const suratJalanKind =
+    type === "SURAT_JALAN" && "kind" in document
+      ? (document.kind as SuratJalanKind)
+      : null;
+  const t = getDocumentStrings(locale, type, suratJalanKind);
   const lines = document.items;
   const total = lines.reduce(
     (sum, line) => sum + Number(line.quantity) * Number(line.unitPrice),
@@ -525,7 +529,14 @@ export async function DocumentPreviewView({
                 <div className="signature-dual">
                   <div className="signature-dual-col">
                     <div style={{ fontWeight: 600 }}>{t.sender}</div>
-                    <div className="signature-box" />
+                    <Image
+                      src="/tanda-tangan.png"
+                      alt={t.signatureAlt}
+                      className="signature-image"
+                      width={100}
+                      height={42}
+                    />
+                    <div className="signature-line" />
                     <div>
                       <span style={{ display: "inline-block", width: 72 }}>{t.name}</span>: Realdi Adithya Saputra
                     </div>

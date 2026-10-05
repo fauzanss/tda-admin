@@ -1,4 +1,4 @@
-import { DocumentLocale, DocumentType } from "@/generated/prisma/client";
+import { DocumentLocale, DocumentType, SuratJalanKind } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
@@ -48,6 +48,10 @@ export function formatInvoiceDocumentNumber(sequence: number, month: number, yea
 
 export function formatDeliveryNoteDocumentNumber(sequence: number, month: number, year: number) {
   return `DO/TDA/${toRomanMonth(month)}/${year}/${String(sequence).padStart(3, "0")}`;
+}
+
+export function formatBastDocumentNumber(sequence: number, month: number, year: number) {
+  return `BAST/TDA/${toRomanMonth(month)}/${year}/${String(sequence).padStart(3, "0")}`;
 }
 
 async function listDocumentNumbersForSequencing(
@@ -113,13 +117,14 @@ function nextInvoiceSequence(
   }, 0);
 }
 
-function nextDeliveryNoteSequence(
+function nextDoOrBastSequence(
   rows: Array<{ documentNumber: string | null }>,
+  prefix: "DO" | "BAST",
   month: number,
   year: number,
 ) {
   const roman = toRomanMonth(month);
-  const pattern = new RegExp(String.raw`^DO/TDA/${roman}/${year}/(\d+)$`);
+  const pattern = new RegExp(String.raw`^${prefix}/TDA/${roman}/${year}/(\d+)$`);
   return rows.reduce((max, row) => {
     const value = row.documentNumber;
     if (!value) return max;
@@ -134,7 +139,7 @@ function nextDeliveryNoteSequence(
 export async function generateDocumentNumber(
   type: DocumentType,
   date: Date,
-  options?: { clientName?: string | null },
+  options?: { clientName?: string | null; suratJalanKind?: SuratJalanKind | null },
 ) {
   const year = date.getFullYear();
 
@@ -153,8 +158,16 @@ export async function generateDocumentNumber(
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month + 1, 1);
     const deliveryNoteRows = await listDocumentNumbersForSequencing(type, monthStart, monthEnd);
+    const kind = options?.suratJalanKind === "SERVICE" ? "SERVICE" : "GOODS";
+    if (kind === "SERVICE") {
+      return formatBastDocumentNumber(
+        nextDoOrBastSequence(deliveryNoteRows, "BAST", monthNumber, year) + 1,
+        monthNumber,
+        year,
+      );
+    }
     return formatDeliveryNoteDocumentNumber(
-      nextDeliveryNoteSequence(deliveryNoteRows, monthNumber, year) + 1,
+      nextDoOrBastSequence(deliveryNoteRows, "DO", monthNumber, year) + 1,
       monthNumber,
       year,
     );

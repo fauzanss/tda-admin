@@ -1,4 +1,9 @@
-import { DocumentLocale, DocumentType, SphOfferKind } from "@/generated/prisma/client";
+import {
+  DocumentLocale,
+  DocumentType,
+  SphOfferKind,
+  SuratJalanKind,
+} from "@/generated/prisma/client";
 
 export type { DocumentLocale };
 
@@ -182,8 +187,10 @@ const sharedId: typeof sharedEn = {
 function buildStrings(
   locale: DocumentLocale,
   type: DocumentType,
+  suratJalanKind?: SuratJalanKind | null,
 ): DocumentStrings {
   const shared = locale === "EN" ? sharedEn : sharedId;
+  const isBast = type === "SURAT_JALAN" && suratJalanKind === "SERVICE";
 
   const typeStrings: Record<DocumentType, Partial<DocumentStrings>> = {
     INVOICE: {
@@ -212,12 +219,30 @@ function buildStrings(
       itemDescription: locale === "EN" ? "Item Description" : "Deskripsi Barang",
     },
     SURAT_JALAN: {
-      documentTitle: locale === "EN" ? "DELIVERY NOTE" : "SURAT JALAN",
-      deliveryNoteNo: locale === "EN" ? "Delivery Note No." : "No. Surat Jalan",
+      documentTitle: isBast
+        ? locale === "EN"
+          ? "HANDOVER MINUTES"
+          : "BERITA ACARA SERAH TERIMA"
+        : locale === "EN"
+          ? "DELIVERY NOTE"
+          : "SURAT JALAN",
+      deliveryNoteNo: isBast
+        ? locale === "EN"
+          ? "BAST No."
+          : "No. BAST"
+        : locale === "EN"
+          ? "Delivery Note No."
+          : "No. Surat Jalan",
       sentFrom: locale === "EN" ? "Sent From" : "Dikirim Dari",
       sentTo: locale === "EN" ? "Sent To" : "Dikirim Ke",
       deliveryInstructions: locale === "EN" ? "Delivery Instructions" : "Instruksi Pengiriman",
-      itemDescription: locale === "EN" ? "Item Description" : "Deskripsi Barang",
+      itemDescription: isBast
+        ? locale === "EN"
+          ? "Service Description"
+          : "Deskripsi Jasa"
+        : locale === "EN"
+          ? "Item Description"
+          : "Deskripsi Barang",
     },
     SPH: {
       documentTitle: locale === "EN" ? "QUOTATION" : "PENAWARAN",
@@ -268,8 +293,9 @@ function buildStrings(
 export function getDocumentStrings(
   locale: DocumentLocale | null | undefined,
   type: DocumentType,
+  suratJalanKind?: SuratJalanKind | null,
 ): DocumentStrings {
-  return buildStrings(locale ?? "ID", type);
+  return buildStrings(locale ?? "ID", type, suratJalanKind);
 }
 
 export function getSphClosingText(

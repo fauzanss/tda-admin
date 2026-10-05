@@ -8,6 +8,7 @@ import {
   PaymentTermType,
   Prisma,
   SphOfferKind,
+  SuratJalanKind,
 } from "@/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -61,6 +62,7 @@ const formSchema = z.object({
   taxId: z.string().optional(),
   paymentTerms: z.string().optional(),
   offerKind: z.enum(["PROCUREMENT", "SERVICE"]).optional(),
+  kind: z.enum(["GOODS", "SERVICE"]).optional(),
   deliveryNotes: z.string().optional(),
   billToName: z.string().optional(),
   billToAddress: z.string().optional(),
@@ -122,6 +124,7 @@ function buildDocumentInput(formData: FormData) {
     taxId: String(formData.get("taxId") ?? ""),
     paymentTerms: String(formData.get("paymentTerms") ?? ""),
     offerKind: String(formData.get("offerKind") ?? "PROCUREMENT") || "PROCUREMENT",
+    kind: String(formData.get("kind") ?? "GOODS") || "GOODS",
     deliveryNotes: String(formData.get("deliveryNotes") ?? ""),
     billToName: String(formData.get("billToName") ?? ""),
     billToAddress: String(formData.get("billToAddress") ?? ""),
@@ -169,6 +172,7 @@ function buildDocumentInput(formData: FormData) {
     taxId: toNullable(payload.taxId),
     paymentTerms: toNullable(payload.paymentTerms),
     offerKind: (payload.offerKind ?? "PROCUREMENT") as SphOfferKind,
+    kind: (payload.kind ?? "GOODS") as SuratJalanKind,
     deliveryNotes: toNullable(payload.deliveryNotes),
     billToName: toNullable(payload.billToName),
     billToAddress: toNullable(payload.billToAddress),
@@ -334,6 +338,7 @@ async function createByType(input: DocumentInput, userId: string, formData?: For
       data: {
         status: DocumentStatus.DRAFT,
         locale: input.locale,
+        kind: input.kind,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         referencePoNumber: input.referencePoNumber,
@@ -526,6 +531,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
       where: { id: documentId },
       data: {
         locale: input.locale,
+        kind: input.kind,
         documentNumber: input.documentNumber,
         issueDate: input.issueDate,
         referencePoNumber: input.referencePoNumber,
@@ -601,7 +607,10 @@ export async function finalizeDocument(type: DocumentType, id: string) {
   } else if (type === "SURAT_JALAN") {
     const doc = await prisma.suratJalan.findFirstOrThrow({ where: { id, ...notDeleted } });
     const number =
-      doc.documentNumber ?? (await generateDocumentNumber("SURAT_JALAN", doc.issueDate));
+      doc.documentNumber ??
+      (await generateDocumentNumber("SURAT_JALAN", doc.issueDate, {
+        suratJalanKind: doc.kind,
+      }));
     await prisma.suratJalan.update({ where: { id }, data: { status: DocumentStatus.FINAL, documentNumber: number, createdById: userId } });
   } else if (type === "PERFORM_INVOICE") {
     const doc = await prisma.performInvoice.findFirstOrThrow({ where: { id, ...notDeleted } });
@@ -822,6 +831,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       data: {
         status: DocumentStatus.DRAFT,
         locale: source.locale,
+        kind: source.kind,
         documentNumber: null,
         duplicatedFromNumber: source.documentNumber ?? "(Draft)",
         issueDate: source.issueDate,
