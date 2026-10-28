@@ -247,7 +247,7 @@ function buildStrings(
     SPH: {
       documentTitle: locale === "EN" ? "QUOTATION" : "PENAWARAN",
       number: locale === "EN" ? "Number" : "Nomor",
-      itemName: locale === "EN" ? "Item Name" : "Nama Barang",
+      itemName: locale === "EN" ? "Item/Service Name" : "Nama Barang/Jasa",
       unitPrice: locale === "EN" ? "Unit Price (IDR)" : "Harga Satuan (IDR)",
       total: locale === "EN" ? "Total (IDR)" : "Total (IDR)",
       paymentTerms: locale === "EN" ? "Payment Terms" : "Syarat Pembayaran",

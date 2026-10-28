@@ -80,6 +80,7 @@ type DocumentWithLines = {
   locale?: DocumentLocale | null;
   duplicatedFromNumber?: string | null;
   withSignature?: boolean | null;
+  notesOnNextPage?: boolean | null;
   issueDate: Date;
   dueDate: Date | null;
   documentNumber: string | null;
@@ -333,6 +334,19 @@ export function DocumentForm({
                 <option value="false">No</option>
               </Select>
             </div>
+            {isSph && (
+              <div>
+                <Label htmlFor="notesOnNextPage">Catatan & Syarat on Next Page</Label>
+                <Select
+                  id="notesOnNextPage"
+                  name="notesOnNextPage"
+                  defaultValue={defaultValue?.notesOnNextPage === true ? "true" : "false"}
+                >
+                  <option value="false">No (same page)</option>
+                  <option value="true">Yes (next page)</option>
+                </Select>
+              </div>
+            )}
             <Field name="issueDate" label="Document Date" type="date" defaultValue={defaultValue ? defaultValue.issueDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)} required />
             {isInvoiceLike && (
               <Field

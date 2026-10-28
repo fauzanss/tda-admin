@@ -33,13 +33,18 @@ body {
 }
 
 .doc-preview.container {
-  max-width: 800px;
+  max-width: 210mm;
   margin: 0 auto;
   background: white;
-  padding: 12px;
+  padding: 8mm 10mm;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
   line-height: 1.2;
   font-size: 12px;
+  box-sizing: border-box;
+}
+
+.doc-preview--sph.container {
+  padding: 5mm 8mm;
 }
 
 .doc-preview p {
@@ -404,10 +409,32 @@ body {
   padding: 10px 16px;
 }
 
+.print-page-number-footer {
+  display: none;
+}
+
+/* Outside @media so engines always see page boxes (margins + page numbers). */
+@page {
+  size: A4;
+  margin: 8mm 10mm;
+
+  @bottom-center {
+    content: counter(page) "/" counter(pages);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 9px;
+    color: #333;
+  }
+}
+
 @media print {
+  html,
   body {
-    margin: 0;
-    padding: 0;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
     background: #fff !important;
   }
 
@@ -415,20 +442,51 @@ body {
     display: none !important;
   }
 
+  /* Flex + min-h-screen admin chrome commonly yields a blank first printed page. */
+  .admin-layout {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    background: #fff !important;
+  }
+
+  .admin-layout > div {
+    display: block !important;
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    min-height: 0 !important;
+  }
+
   .admin-layout .print-content {
-    flex: 0 0 100% !important;
-    max-width: 100% !important;
+    display: block !important;
+    float: none !important;
+    flex: none !important;
+    max-width: none !important;
     width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .doc-preview-page {
+    display: block !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
   }
 
   .doc-preview.container {
-    margin: 0;
-    box-shadow: none;
-    max-width: 100% !important;
+    display: block !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    max-width: none !important;
     width: 100% !important;
-    padding: 8mm 10mm;
+    padding: 0 !important;
     font-size: 10.5px;
     line-height: 1.15;
   }
@@ -461,20 +519,46 @@ body {
     height: 60px;
   }
 
-  .doc-preview {
+  .doc-preview .letterhead,
+  .doc-preview .signature-section,
+  .doc-preview .total-section,
+  .doc-preview .item-table.doc-totals-table,
+  .doc-preview .document-info,
+  .doc-preview .doc-section {
     break-inside: avoid;
   }
 
-  .doc-preview-page {
-    padding: 0 !important;
-    background: #fff !important;
+  .doc-preview .item-table {
+    break-inside: auto;
+  }
+
+  .doc-preview .item-table thead {
+    display: table-header-group;
+  }
+
+  .doc-preview .item-table tbody {
+    display: table-row-group;
+  }
+
+  .doc-preview .item-table tr {
+    break-inside: auto;
+    break-after: auto;
+  }
+
+  /* Replaced by @page @bottom-center — keep hidden so old 0/0 never prints. */
+  .print-page-number-footer {
+    display: none !important;
   }
 
   .doc-preview--sph {
-    zoom: 1;
-    padding: 5mm 8mm !important;
+    padding: 0 !important;
     font-size: 9.5px;
     line-height: 1.1;
+  }
+
+  .doc-preview .doc-break-before-page {
+    break-before: page;
+    page-break-before: always;
   }
 
   .doc-preview--sph .letterhead {
@@ -580,11 +664,6 @@ body {
 
   .doc-preview--sph .signature-left > div {
     line-height: 1.1;
-  }
-
-  @page {
-    margin: 0;
-    size: A4;
   }
 
   .doc-preview--invoice::before,

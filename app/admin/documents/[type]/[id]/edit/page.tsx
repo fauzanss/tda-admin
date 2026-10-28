@@ -130,6 +130,7 @@ export default async function EditDocumentPage({
     duplicatedFromNumber:
       "duplicatedFromNumber" in document ? document.duplicatedFromNumber ?? null : null,
     withSignature: "withSignature" in document ? document.withSignature : true,
+    notesOnNextPage: "notesOnNextPage" in document ? document.notesOnNextPage : false,
     issueDate: document.issueDate,
     dueDate: "dueDate" in document ? document.dueDate ?? null : null,
     documentNumber: document.documentNumber ?? null,

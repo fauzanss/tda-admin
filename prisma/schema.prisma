@@ -351,6 +351,7 @@ model Sph {
   offerKind      SphOfferKind   @default(PROCUREMENT)
   salesPerson    String?
   withSignature  Boolean        @default(true)
+  notesOnNextPage Boolean       @default(false)
   createdById    String
   createdBy      User           @relation("SphCreatedBy", fields: [createdById], references: [id])
   items          SphItem[]

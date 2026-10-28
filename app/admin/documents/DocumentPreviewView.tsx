@@ -223,6 +223,8 @@ export async function DocumentPreviewView({
   const deliveryNotes = "deliveryNotes" in document ? document.deliveryNotes : null;
   const salesPerson = "salesPerson" in document ? document.salesPerson : null;
   const withSignature = "withSignature" in document ? document.withSignature : true;
+  const notesOnNextPage =
+    type === "SPH" && "notesOnNextPage" in document ? Boolean(document.notesOnNextPage) : false;
   const signerName =
     type === "PURCHASE_ORDER" && salesPerson
       ? salesPerson
@@ -257,6 +259,7 @@ export async function DocumentPreviewView({
       <Suspense fallback={null}>
         <PrintButton fileName={printFileName} />
       </Suspense>
+      <div className="print-page-number-footer" aria-hidden="true" />
       <article
         className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "PERFORM_INVOICE" ? " doc-preview--perform-invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
         data-doc-locale={locale}
@@ -477,7 +480,7 @@ export async function DocumentPreviewView({
         )}
 
         {type === "SPH" ? (
-          <div className="doc-side-by-side">
+          <div className={`doc-side-by-side${notesOnNextPage ? " doc-break-before-page" : ""}`}>
             <div className="payment-info">
               <div className="payment-title">{t.paymentTerms}</div>
               {paymentTerms ? renderBulletLines(paymentTerms) : <div>-</div>}
