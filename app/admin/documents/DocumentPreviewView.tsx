@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Suspense } from "react";
 
+import { ExportExcelButton } from "@/app/admin/documents/ExportExcelButton";
 import { PrintButton } from "@/app/admin/documents/PrintButton";
 import { DocumentLocale, DocumentType, SuratJalanKind } from "@/generated/prisma/client";
 import { getDocumentStrings, getSphClosingText } from "@/lib/document-i18n";
@@ -259,6 +260,7 @@ export async function DocumentPreviewView({
       <Suspense fallback={null}>
         <PrintButton fileName={printFileName} />
       </Suspense>
+      {type === "SPH" && <ExportExcelButton href={`/api/documents/SPH/${id}/excel`} />}
       <div className="print-page-number-footer" aria-hidden="true" />
       <article
         className={`doc-preview container${type === "INVOICE" ? " doc-preview--invoice" : ""}${type === "PERFORM_INVOICE" ? " doc-preview--perform-invoice" : ""}${type === "SPH" ? " doc-preview--sph" : ""}`}
