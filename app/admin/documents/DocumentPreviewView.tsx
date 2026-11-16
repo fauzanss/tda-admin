@@ -226,6 +226,10 @@ export async function DocumentPreviewView({
   const withSignature = "withSignature" in document ? document.withSignature : true;
   const notesOnNextPage =
     type === "SPH" && "notesOnNextPage" in document ? Boolean(document.notesOnNextPage) : false;
+  const showPpn =
+    type === "SPH" && "showPpn" in document ? Boolean(document.showPpn) : false;
+  const sphPpn = showPpn ? total * 0.11 : 0;
+  const sphGrandTotal = total + sphPpn;
   const signerName =
     type === "PURCHASE_ORDER" && salesPerson
       ? salesPerson
@@ -470,11 +474,30 @@ export async function DocumentPreviewView({
             </tbody>
           </table>
         ) : type === "SPH" ? (
-          <div className="total-section">
-            <div className="total-row">
-              {t.grandTotal} (IDR): {formatCurrencyAmount(total, locale)}
+          showPpn ? (
+            <table className="item-table doc-totals-table doc-totals-table--sph">
+              <tbody>
+                <tr>
+                  <td>{t.subtotal}</td>
+                  <td className="text-right">{formatCurrencyAmount(total, locale)}</td>
+                </tr>
+                <tr>
+                  <td>{t.ppn}</td>
+                  <td className="text-right">{formatCurrencyAmount(sphPpn, locale)}</td>
+                </tr>
+                <tr>
+                  <td>Total</td>
+                  <td className="text-right">{formatCurrencyAmount(sphGrandTotal, locale)}</td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <div className="total-section">
+              <div className="total-row">
+                {t.grandTotal} (IDR): {formatCurrencyAmount(total, locale)}
+              </div>
             </div>
-          </div>
+          )
         ) : type !== "SURAT_JALAN" && (
           <div className="total-section">
             <div className="total-row">{t.grandTotal}: {formatCurrency(total, locale)}</div>

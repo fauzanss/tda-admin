@@ -204,14 +204,41 @@ export async function buildSphExcelBuffer(
   }
   row += 1;
 
-  sheet.mergeCells(`A${row}:D${row}`);
-  sheet.getCell(`A${row}`).value = `${t.grandTotal} (IDR):`;
-  sheet.getCell(`A${row}`).font = { bold: true };
-  sheet.getCell(`A${row}`).alignment = { horizontal: "right" };
-  sheet.getCell(`E${row}`).value = formatCurrencyAmount(total, locale);
-  sheet.getCell(`E${row}`).font = { bold: true };
-  sheet.getCell(`E${row}`).alignment = { horizontal: "right" };
-  row += 2;
+  if (document.showPpn) {
+    const sphPpn = total * 0.11;
+    const sphGrandTotal = total + sphPpn;
+    const totalRows: Array<[string, number]> = [
+      [t.subtotal, total],
+      [t.ppn, sphPpn],
+      ["Total", sphGrandTotal],
+    ];
+    for (const [label, amount] of totalRows) {
+      sheet.mergeCells(`A${row}:D${row}`);
+      const labelCell = sheet.getCell(`A${row}`);
+      labelCell.value = label;
+      labelCell.font = { bold: true };
+      labelCell.alignment = { horizontal: "right" };
+      const amountCell = sheet.getCell(`E${row}`);
+      amountCell.value = formatCurrencyAmount(amount, locale);
+      amountCell.font = { bold: true };
+      amountCell.alignment = { horizontal: "right" };
+      if (label === "Total") {
+        labelCell.border = { top: { style: "medium" } };
+        amountCell.border = { top: { style: "medium" } };
+      }
+      row += 1;
+    }
+  } else {
+    sheet.mergeCells(`A${row}:D${row}`);
+    sheet.getCell(`A${row}`).value = `${t.grandTotal} (IDR):`;
+    sheet.getCell(`A${row}`).font = { bold: true };
+    sheet.getCell(`A${row}`).alignment = { horizontal: "right" };
+    sheet.getCell(`E${row}`).value = formatCurrencyAmount(total, locale);
+    sheet.getCell(`E${row}`).font = { bold: true };
+    sheet.getCell(`E${row}`).alignment = { horizontal: "right" };
+    row += 1;
+  }
+  row += 1;
 
   sheet.getCell(`A${row}`).value = t.paymentTerms;
   sheet.getCell(`A${row}`).font = { bold: true };

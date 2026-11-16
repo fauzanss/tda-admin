@@ -352,6 +352,7 @@ model Sph {
   salesPerson    String?
   withSignature  Boolean        @default(true)
   notesOnNextPage Boolean       @default(false)
+  showPpn        Boolean        @default(false)
   createdById    String
   createdBy      User           @relation("SphCreatedBy", fields: [createdById], references: [id])
   items          SphItem[]

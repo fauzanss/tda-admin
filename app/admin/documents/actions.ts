@@ -50,6 +50,7 @@ const formSchema = z.object({
   locale: z.enum(["EN", "ID"]),
   withSignature: z.enum(["true", "false"]),
   notesOnNextPage: z.enum(["true", "false"]).optional(),
+  showPpn: z.enum(["true", "false"]).optional(),
   issueDate: z.string().min(1),
   dueDate: z.string().optional(),
   documentNumber: z.string().optional(),
@@ -113,6 +114,7 @@ function buildDocumentInput(formData: FormData) {
     locale: String(formData.get("locale") ?? "ID"),
     withSignature: String(formData.get("withSignature") ?? "true"),
     notesOnNextPage: String(formData.get("notesOnNextPage") ?? "false"),
+    showPpn: String(formData.get("showPpn") ?? "false"),
     issueDate: String(formData.get("issueDate") ?? ""),
     dueDate: String(formData.get("dueDate") ?? ""),
     documentNumber: String(formData.get("documentNumber") ?? ""),
@@ -162,6 +164,7 @@ function buildDocumentInput(formData: FormData) {
     locale: payload.locale as DocumentLocale,
     withSignature: payload.withSignature === "true",
     notesOnNextPage: payload.notesOnNextPage === "true",
+    showPpn: payload.showPpn === "true",
     issueDate,
     dueDate,
     documentNumber: toNullable(payload.documentNumber),
@@ -379,6 +382,7 @@ async function createByType(input: DocumentInput, userId: string, formData?: For
       salesPerson: input.salesPerson,
       withSignature: input.withSignature,
       notesOnNextPage: input.notesOnNextPage,
+      showPpn: input.showPpn,
       createdById: userId,
       items: { create: withoutTaxable(input.lines) },
     },
@@ -580,6 +584,7 @@ export async function updateDocument(documentId: string, formData: FormData) {
         salesPerson: input.salesPerson,
         withSignature: input.withSignature,
         notesOnNextPage: input.notesOnNextPage,
+        showPpn: input.showPpn,
         items: { deleteMany: {}, create: withoutTaxable(input.lines) },
       },
     });
@@ -886,6 +891,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
       salesPerson: source.salesPerson,
       withSignature: source.withSignature,
       notesOnNextPage: source.notesOnNextPage,
+      showPpn: source.showPpn,
       createdById: userId,
       items: {
         create: source.items.map((item) => ({

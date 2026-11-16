@@ -81,6 +81,7 @@ type DocumentWithLines = {
   duplicatedFromNumber?: string | null;
   withSignature?: boolean | null;
   notesOnNextPage?: boolean | null;
+  showPpn?: boolean | null;
   issueDate: Date;
   dueDate: Date | null;
   documentNumber: string | null;
@@ -344,6 +345,19 @@ export function DocumentForm({
                 >
                   <option value="false">No (same page)</option>
                   <option value="true">Yes (next page)</option>
+                </Select>
+              </div>
+            )}
+            {isSph && (
+              <div>
+                <Label htmlFor="showPpn">Show PPN 11%</Label>
+                <Select
+                  id="showPpn"
+                  name="showPpn"
+                  defaultValue={defaultValue?.showPpn === true ? "true" : "false"}
+                >
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
                 </Select>
               </div>
             )}
