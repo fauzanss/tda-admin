@@ -68,6 +68,7 @@ export type DocumentStrings = {
   yoursSincerely: string;
   headOfSales: string;
   signatureAlt: string;
+  groupSubtotal: (groupName: string) => string;
 };
 
 const sharedEn: Omit<
@@ -136,6 +137,7 @@ const sharedEn: Omit<
   yoursSincerely: "Yours sincerely,",
   headOfSales: "Head of Sales & Marketing",
   signatureAlt: "Signature",
+  groupSubtotal: (groupName: string) => `Subtotal ${groupName}`,
 };
 
 const sharedId: typeof sharedEn = {
@@ -182,6 +184,7 @@ const sharedId: typeof sharedEn = {
   yoursSincerely: "Hormat kami,",
   headOfSales: "Head of Sales & Marketing",
   signatureAlt: "Tanda tangan",
+  groupSubtotal: (groupName: string) => `Subtotal ${groupName}`,
 };
 
 function buildStrings(

@@ -295,6 +295,18 @@ body {
   padding-right: 4px;
 }
 
+.item-table tr.sph-group-header td {
+  background: #2c3e50;
+  color: #fff;
+  font-weight: 700;
+  border-color: #2c3e50;
+}
+
+.item-table tr.sph-group-subtotal td {
+  background: #eef1f4;
+  font-weight: 700;
+}
+
 .item-table.doc-totals-table {
   margin-top: 8px;
   width: 360px;
