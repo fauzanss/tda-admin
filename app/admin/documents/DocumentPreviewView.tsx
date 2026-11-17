@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 
 import { ExportExcelButton } from "@/app/admin/documents/ExportExcelButton";
 import { PrintButton } from "@/app/admin/documents/PrintButton";
@@ -12,6 +12,7 @@ import { formatCurrency, formatCurrencyAmount, formatLongDate, parseNotes } from
 import { buildDocumentPrintFileName } from "@/lib/print-file-name";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
+import { groupSphItems } from "@/lib/sph-item-grouping";
 
 function renderBulletLines(text: string) {
   return parseNotes(text).map((line, index) => (
@@ -376,46 +377,87 @@ export async function DocumentPreviewView({
             )}
           </thead>
           <tbody>
-            {lines.map((line, index) => {
-              const lineTotal = Number(line.quantity) * Number(line.unitPrice);
-              if (type === "SURAT_JALAN") {
-                return (
-                  <tr key={line.id}>
-                    <td className="text-center">{index + 1}</td>
-                    <td>
-                      {renderDescription(type, line.description)}
-                      {line.detail && <div className="line-detail">{line.detail}</div>}
-                    </td>
-                    <td className="text-center">{Number(line.quantity)}</td>
-                    <td className="text-center">{line.unit}</td>
-                    <td className="text-center">{line.detail ? t.conditionGood : "-"}</td>
-                  </tr>
-                );
-              }
+            {type === "SPH"
+              ? (() => {
+                  const sphLines = lines.map((line) => ({
+                    ...line,
+                    groupName: "groupName" in line ? line.groupName : null,
+                  }));
+                  const { ungrouped, groups } = groupSphItems(sphLines);
+                  const colCount = 5;
+                  const renderItemRow = (line: (typeof sphLines)[number]) => {
+                    const lineTotal = Number(line.quantity) * Number(line.unitPrice);
+                    return (
+                      <tr key={line.id}>
+                        <td>
+                          {renderDescription(type, line.description)}
+                          {renderDetail(type, line.detail)}
+                        </td>
+                        <td className="text-center col-qty">{Number(line.quantity)}</td>
+                        <td className="text-center">{line.unit}</td>
+                        <td className="text-right">
+                          {formatCurrencyAmount(Number(line.unitPrice), locale)}
+                        </td>
+                        <td className="text-right">
+                          {formatCurrencyAmount(lineTotal, locale)}
+                        </td>
+                      </tr>
+                    );
+                  };
+                  return (
+                    <>
+                      {ungrouped.map(renderItemRow)}
+                      {groups.map((group) => (
+                        <Fragment key={`group-${group.name}`}>
+                          <tr className="sph-group-header">
+                            <td colSpan={colCount}>{group.name}</td>
+                          </tr>
+                          {group.items.map(renderItemRow)}
+                          <tr className="sph-group-subtotal">
+                            <td colSpan={4} className="text-right">
+                              {t.groupSubtotal(group.name)}
+                            </td>
+                            <td className="text-right">
+                              {formatCurrencyAmount(group.subtotal, locale)}
+                            </td>
+                          </tr>
+                        </Fragment>
+                      ))}
+                    </>
+                  );
+                })()
+              : lines.map((line, index) => {
+                  const lineTotal = Number(line.quantity) * Number(line.unitPrice);
+                  if (type === "SURAT_JALAN") {
+                    return (
+                      <tr key={line.id}>
+                        <td className="text-center">{index + 1}</td>
+                        <td>
+                          {renderDescription(type, line.description)}
+                          {line.detail && <div className="line-detail">{line.detail}</div>}
+                        </td>
+                        <td className="text-center">{Number(line.quantity)}</td>
+                        <td className="text-center">{line.unit}</td>
+                        <td className="text-center">{line.detail ? t.conditionGood : "-"}</td>
+                      </tr>
+                    );
+                  }
 
-              return (
-                <tr key={line.id}>
-                  <td>
-                    {renderDescription(type, line.description)}
-                    {renderDetail(type, line.detail)}
-                  </td>
-                  <td className={`text-center${type === "SPH" ? " col-qty" : ""}`}>
-                    {Number(line.quantity)}
-                  </td>
-                  <td className="text-center">{line.unit}</td>
-                  <td className="text-right">
-                    {type === "SPH"
-                      ? formatCurrencyAmount(Number(line.unitPrice), locale)
-                      : formatCurrency(Number(line.unitPrice), locale)}
-                  </td>
-                  <td className="text-right">
-                    {type === "SPH"
-                      ? formatCurrencyAmount(lineTotal, locale)
-                      : formatCurrency(lineTotal, locale)}
-                  </td>
-                </tr>
-              );
-            })}
+                  return (
+                    <tr key={line.id}>
+                      <td>
+                        {renderDescription(type, line.description)}
+                        {renderDetail(type, line.detail)}
+                      </td>
+                      <td className="text-center">{Number(line.quantity)}</td>
+                      <td className="text-center">{line.unit}</td>
+                      <td className="text-right">
+                        {formatCurrency(Number(line.unitPrice), locale)}
+                      </td>
+                      <td className="text-right">{formatCurrency(lineTotal, locale)}</td>
+                    </tr>
+                  );
+                })}
           </tbody>
         </table>
 
