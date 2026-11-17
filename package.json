@@ -8,6 +8,7 @@
     "postinstall": "prisma generate",
     "start": "next start -p ${PORT:-3020}",
     "lint": "eslint",
+    "test": "tsx --test 'lib/**/*.test.ts'",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"
