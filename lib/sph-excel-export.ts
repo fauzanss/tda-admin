@@ -6,6 +6,7 @@ import ExcelJS from "exceljs";
 import type { CompanyProfile, Sph, SphItem } from "@/generated/prisma/client";
 import { getDocumentStrings, getSphClosingText } from "@/lib/document-i18n";
 import { formatCurrencyAmount, parseNotes } from "@/lib/documents";
+import { groupSphItems } from "@/lib/sph-item-grouping";
 
 type SphWithItems = Sph & { items: SphItem[] };
 
@@ -171,7 +172,9 @@ export async function buildSphExcelBuffer(
   });
   row += 1;
 
-  for (const line of document.items) {
+  const { ungrouped, groups } = groupSphItems(document.items);
+
+  const writeItemRow = (line: SphItem) => {
     const lineTotal = Number(line.quantity) * Number(line.unitPrice);
     const description = [line.description, line.detail].filter(Boolean).join("\n");
     const itemRow = sheet.getRow(row);
@@ -201,6 +204,80 @@ export async function buildSphExcelBuffer(
       itemRow.height = Math.min(18 * (description.split("\n").length + 1), 72);
     }
     row += 1;
+  };
+
+  const writeGroupHeader = (name: string) => {
+    sheet.mergeCells(`A${row}:E${row}`);
+    const cell = sheet.getCell(`A${row}`);
+    cell.value = name;
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF2C3E50" },
+    };
+    cell.alignment = { horizontal: "left", vertical: "middle" };
+    for (let col = 1; col <= 5; col += 1) {
+      sheet.getCell(row, col).border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+      sheet.getCell(row, col).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF2C3E50" },
+      };
+    }
+    row += 1;
+  };
+
+  const writeGroupSubtotal = (name: string, subtotal: number) => {
+    sheet.mergeCells(`A${row}:D${row}`);
+    const labelCell = sheet.getCell(`A${row}`);
+    labelCell.value = t.groupSubtotal(name);
+    labelCell.font = { bold: true };
+    labelCell.alignment = { horizontal: "right", vertical: "middle" };
+    labelCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFEEF1F4" },
+    };
+    const amountCell = sheet.getCell(`E${row}`);
+    amountCell.value = formatCurrencyAmount(subtotal, locale);
+    amountCell.font = { bold: true };
+    amountCell.alignment = { horizontal: "right", vertical: "middle" };
+    amountCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFEEF1F4" },
+    };
+    for (let col = 1; col <= 5; col += 1) {
+      sheet.getCell(row, col).border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+      sheet.getCell(row, col).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFEEF1F4" },
+      };
+    }
+    row += 1;
+  };
+
+  for (const line of ungrouped) {
+    writeItemRow(line);
+  }
+  for (const group of groups) {
+    writeGroupHeader(group.name);
+    for (const line of group.items) {
+      writeItemRow(line);
+    }
+    writeGroupSubtotal(group.name, group.subtotal);
   }
   row += 1;
 
