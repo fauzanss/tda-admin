@@ -1,7 +1,6 @@
 import { DocumentLocale, DocumentType, SuratJalanKind } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { notDeleted } from "@/lib/soft-delete";
 
 const slashNumberedTypes = new Set<DocumentType>([
   "SPH",
@@ -59,8 +58,8 @@ async function listDocumentNumbersForSequencing(
   yearStart: Date,
   yearEnd: Date,
 ) {
+  // Include soft-deleted rows: documentNumber stays unique globally.
   const baseWhere = {
-    ...notDeleted,
     issueDate: { gte: yearStart, lt: yearEnd },
     documentNumber: { not: null },
   };
