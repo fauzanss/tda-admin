@@ -34,6 +34,7 @@ type FormLine = {
   unit: string;
   unitPrice: number;
   taxable: boolean;
+  groupName: string;
 };
 
 function formatPriceInput(value: number) {
@@ -119,6 +120,7 @@ type DocumentWithLines = {
     unit: string | null;
     unitPrice: number;
     taxable?: boolean;
+    groupName?: string | null;
   }>;
 };
 
@@ -152,6 +154,7 @@ function emptyLine(): FormLine {
     unit: "pcs",
     unitPrice: 0,
     taxable: true,
+    groupName: "",
   };
 }
 
@@ -184,6 +187,7 @@ export function DocumentForm({
       unit: line.unit ?? "",
       unitPrice: Number(line.unitPrice),
       taxable: line.taxable !== false,
+      groupName: line.groupName ?? "",
     })) ?? [emptyLine()],
   );
   const [priceInputs, setPriceInputs] = useState<string[]>(
@@ -679,6 +683,18 @@ export function DocumentForm({
             </div>
             {lines.map((line, index) => (
               <div key={index} className="mb-4 rounded-lg border border-slate-200 p-4">
+                {isSph && (
+                  <div className="mb-3">
+                    <Label className="mb-1">Group</Label>
+                    <Input
+                      placeholder="e.g. SKK, Manufacturing"
+                      value={line.groupName}
+                      onChange={(event) =>
+                        updateLine(index, { groupName: event.target.value })
+                      }
+                    />
+                  </div>
+                )}
                 <div className="mb-3">
                   <Label className="mb-1">{isSph ? "Item Name" : "Description"}</Label>
                   {isInvoiceLike ? (
