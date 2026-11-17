@@ -35,6 +35,7 @@ import { defaultIdrPaymentTransfer } from "@/lib/document-meta";
 import { parseBillingPhase } from "@/lib/billing-phase";
 import { prisma } from "@/lib/prisma";
 import { notDeleted } from "@/lib/soft-delete";
+import { normalizeGroupName } from "@/lib/sph-item-grouping";
 
 const lineSchema = z.object({
   description: z.string().min(1),
@@ -43,6 +44,7 @@ const lineSchema = z.object({
   unit: z.string().optional(),
   unitPrice: z.number().min(0),
   taxable: z.boolean().optional(),
+  groupName: z.string().optional().nullable(),
 });
 
 const formSchema = z.object({
@@ -191,15 +193,24 @@ function buildDocumentInput(formData: FormData) {
     notes,
     additionalNotes,
     poMasukId: toNullable(payload.poMasukId),
-    lines: payload.lines.map((line, index) => ({
-      sortOrder: index + 1,
-      description: line.description,
-      detail: toNullable(line.detail),
-      quantity: line.quantity,
-      unit: toNullable(line.unit),
-      unitPrice: line.unitPrice,
-      taxable: line.taxable !== false,
-    })),
+    lines: payload.lines.map((line, index) => {
+      const base = {
+        sortOrder: index + 1,
+        description: line.description,
+        detail: toNullable(line.detail),
+        quantity: line.quantity,
+        unit: toNullable(line.unit),
+        unitPrice: line.unitPrice,
+        taxable: line.taxable !== false,
+      };
+      if (payload.type === "SPH") {
+        return {
+          ...base,
+          groupName: normalizeGroupName(line.groupName ?? null),
+        };
+      }
+      return base;
+    }),
   };
 }
 
@@ -902,6 +913,7 @@ export async function duplicateDocument(type: DocumentType, id: string) {
           unit: item.unit,
           unitPrice: item.unitPrice,
           currency: item.currency,
+          groupName: item.groupName,
         })),
       },
     },

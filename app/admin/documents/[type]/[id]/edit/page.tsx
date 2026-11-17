@@ -178,6 +178,7 @@ export default async function EditDocumentPage({
       unit: line.unit ?? null,
       unitPrice: Number(line.unitPrice),
       taxable: "taxable" in line ? Boolean(line.taxable) : true,
+      groupName: "groupName" in line ? (line.groupName as string | null) : null,
     })),
   };
 
