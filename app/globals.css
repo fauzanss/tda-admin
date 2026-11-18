@@ -300,11 +300,15 @@ body {
   color: #fff;
   font-weight: 700;
   border-color: #2c3e50;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .item-table tr.sph-group-subtotal td {
   background: #eef1f4;
   font-weight: 700;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .item-table.doc-totals-table {
@@ -705,5 +709,20 @@ body {
   .doc-preview--perform-invoice::before {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  .item-table tr.sph-group-header td,
+  .item-table tr.sph-group-subtotal td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .item-table tr.sph-group-header td {
+    background: #2c3e50 !important;
+    color: #fff !important;
+  }
+
+  .item-table tr.sph-group-subtotal td {
+    background: #eef1f4 !important;
   }
 }
